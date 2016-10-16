@@ -31,6 +31,20 @@ int main(int argc, char* argv[]) {
 	}
 
 	for (int i = 1; i < argc; ++i) {
+		int length = strlen(argv[i]);
+		if (argv[i][length - 1] == 'z') {
+			printf("Warning: This might be a COMPRESSED lz file\nMake sure this is a RAW lz file\nFile: %s\nPress Y to continue or N to skip\n", argv[i]);
+			char c;
+			scanf("%c", &c);
+			if (c == 'Y' || c == 'y') {
+				printf("Continuing\n");
+			}
+			else {
+				printf("Skipping\n");
+				continue;
+			}
+		}
+
 		FILE* lz = fopen(argv[i], "r");
 		if (lz == NULL) {
 			printf("ERROR: %s not found\n", argv[i]);
@@ -98,7 +112,7 @@ int main(int argc, char* argv[]) {
 
 		char outfileName[512];
 		sscanf(argv[i], "%507s", outfileName);
-		int length = strlen(outfileName);
+		length = strlen(outfileName);
 		outfileName[length++] = '.';
 		outfileName[length++] = 't';
 		outfileName[length++] = 'x';
