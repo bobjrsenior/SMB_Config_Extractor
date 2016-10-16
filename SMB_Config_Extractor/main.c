@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
 		ConfigObject bumpers;
 		ConfigObject jamabars;
 		ConfigObject bananas;
+		ConfigObject backgrounds;
 
 		fseek(lz, 16, SEEK_SET);
 		startPositions.offset = READINT(lz);
@@ -62,6 +63,10 @@ int main(int argc, char* argv[]) {
 		bananas.number = READINT(lz);
 		bananas.offset = READINT(lz);
 
+		fseek(lz, 104, SEEK_SET);
+
+		backgrounds.number = READINT(lz);
+		backgrounds.offset = READINT(lz);
 
 		char outfileName[512];
 		sscanf(argv[i], "%507s", outfileName);
@@ -216,6 +221,33 @@ int main(int argc, char* argv[]) {
 
 			fprintf(outfile, "banana [ %d ] . type . x = %c\n", j, type);
 
+			fprintf(outfile, "\n");
+		}
+
+		fseek(lz, backgrounds.offset, SEEK_SET);
+
+		for (int j = 0; j < backgrounds.number; ++j) {
+			
+
+			fseek(lz, 4, SEEK_CUR);
+			int nameOffset = READINT(lz);
+
+			int position = ftell(lz);
+			
+			fseek(lz, nameOffset, SEEK_SET);
+			char modelName[512];
+
+			fscanf(lz, "%511s", modelName);
+			fseek(lz, position, SEEK_SET);
+
+			fseek(lz, 48, SEEK_CUR);
+
+			fprintf(outfile, "background [ %d ] . name . x = %s\n", j, modelName);
+
+			
+		}
+
+		if (backgrounds.number == 0) {
 			fprintf(outfile, "\n");
 		}
 
