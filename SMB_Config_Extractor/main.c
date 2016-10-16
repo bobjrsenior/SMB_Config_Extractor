@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #define READINT(x) (getc(x) << 24) + (getc(x) << 16) + (getc(x) << 8) + (getc(x))
+#define SMB1 0
+#define SMB2 1
 
 typedef struct {
 	int number;
@@ -33,6 +36,7 @@ int main(int argc, char* argv[]) {
 			printf("ERROR: %s not found\n", argv[i]);
 			continue;
 		}
+
 		ConfigObject startPositions;
 		ConfigObject falloutY;
 		ConfigObject goals;
@@ -40,6 +44,23 @@ int main(int argc, char* argv[]) {
 		ConfigObject jamabars;
 		ConfigObject bananas;
 		ConfigObject backgrounds;
+
+		int game = SMB1;
+
+		fseek(lz, 4, SEEK_SET);
+
+		int gameCheck = READINT(lz);
+		if (gameCheck == 0x64) {
+			game = SMB1;
+		}
+		else if (gameCheck == 0x447A0000) {
+			game = SMB2;
+		}
+		else {
+			printf("Unsupported or Unrecognized SMB Game: %s\n", argv[i]);
+			continue;
+		}
+
 
 		fseek(lz, 16, SEEK_SET);
 		startPositions.offset = READINT(lz);
@@ -52,7 +73,9 @@ int main(int argc, char* argv[]) {
 		goals.number = READINT(lz);
 		goals.offset = READINT(lz);
 
-		fseek(lz, 8, SEEK_CUR);
+		if (game == SMB1) {
+			fseek(lz, 8, SEEK_CUR);
+		}
 
 		bumpers.number = READINT(lz);
 		bumpers.offset = READINT(lz);
@@ -63,7 +86,12 @@ int main(int argc, char* argv[]) {
 		bananas.number = READINT(lz);
 		bananas.offset = READINT(lz);
 
-		fseek(lz, 104, SEEK_SET);
+		if (game == SMB1) {
+			fseek(lz, 104, SEEK_SET);
+		}
+		else if (game == SMB2) {
+			fseek(lz, 88, SEEK_SET);
+		}
 
 		backgrounds.number = READINT(lz);
 		backgrounds.offset = READINT(lz);
@@ -121,8 +149,30 @@ int main(int argc, char* argv[]) {
 			float yRot = readRot(lz);
 			float zRot = readRot(lz);
 
-			char type = getc(lz);
-			getc(lz);
+			uint16_t shortType = (getc(lz) << 8) + (getc(lz));
+			char type = 'B';
+			if (game == SMB1) {
+				if (shortType == 0x4200) {
+					type = 'B';
+				}
+				else if (shortType == 0x4700) {
+					type = 'G';
+				}
+				else if (shortType == 0x5200) {
+					type = 'R';
+				}
+			}
+			else if(game == SMB2){
+				if (shortType == 0x0001) {
+					type = 'B';
+				}
+				else if (shortType == 0x0101) {
+					type = 'G';
+				}
+				else if (shortType == 0x0201) {
+					type = 'R';
+				}
+			}
 
 			fprintf(outfile, "goal [ %d ] . pos . x = %f\n", j, xPos);
 			fprintf(outfile, "goal [ %d ] . pos . y = %f\n", j, yPos);

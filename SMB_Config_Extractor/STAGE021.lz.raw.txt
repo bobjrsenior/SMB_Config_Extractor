@@ -1,238 +1,268 @@
 fallout [ 0 ] . pos . y = -1.000000
 
+start [ 0 ] . pos . x = -71.500000
+start [ 0 ] . pos . y = 3.499997
+start [ 0 ] . pos . z = 5.500000
+start [ 0 ] . rot . x = 89.994507
+start [ 0 ] . rot . y = 270.005493
+start [ 0 ] . rot . z = 0.000000
+
 goal [ 0 ] . pos . x = 44.500000
 goal [ 0 ] . pos . y = 3.000000
 goal [ 0 ] . pos . z = 5.500000
 goal [ 0 ] . rot . x = 0.000000
-goal [ 0 ] . rot . x = 270.005493
-goal [ 0 ] . rot . x = 0.000000
+goal [ 0 ] . rot . y = 270.005493
+goal [ 0 ] . rot . z = 0.000000
 goal [ 0 ] . type . x = B
 
-goal [ 1 ] . pos . x = 0.000000
-goal [ 1 ] . pos . y = 18.500000
-goal [ 1 ] . pos . z = 0.000000
+goal [ 1 ] . pos . x = 28.000000
+goal [ 1 ] . pos . y = 0.000000
+goal [ 1 ] . pos . z = 18.500000
 goal [ 1 ] . rot . x = 0.000000
-goal [ 1 ] . rot . x = 99.843750
-goal [ 1 ] . rot . x = 273.208008
-goal [ 1 ] . type . x = B
+goal [ 1 ] . rot . y = 270.005493
+goal [ 1 ] . rot . z = 0.000000
+goal [ 1 ] . type . x = G
 
 banana [ 0 ] . pos . x = -50.000011
 banana [ 0 ] . pos . y = 0.600000
-banana [ 0 ] . pos . z = -50.000011
+banana [ 0 ] . pos . z = 17.500000
 banana [ 0 ] . type . x = B
 
 banana [ 1 ] . pos . x = -48.000011
 banana [ 1 ] . pos . y = 0.600000
-banana [ 1 ] . pos . z = -48.000011
+banana [ 1 ] . pos . z = 18.500000
 banana [ 1 ] . type . x = B
 
 banana [ 2 ] . pos . x = 21.999990
 banana [ 2 ] . pos . y = 0.600000
-banana [ 2 ] . pos . z = 21.999990
+banana [ 2 ] . pos . z = 18.500000
 banana [ 2 ] . type . x = B
 
 banana [ 3 ] . pos . x = -51.500000
 banana [ 3 ] . pos . y = 0.600000
-banana [ 3 ] . pos . z = -51.500000
+banana [ 3 ] . pos . z = 18.500000
 banana [ 3 ] . type . x = B
 
 banana [ 4 ] . pos . x = 17.000000
 banana [ 4 ] . pos . y = 0.600000
-banana [ 4 ] . pos . z = 17.000000
+banana [ 4 ] . pos . z = 18.500000
 banana [ 4 ] . type . x = B
 
 banana [ 5 ] . pos . x = 32.250000
 banana [ 5 ] . pos . y = 0.600000
-banana [ 5 ] . pos . z = 32.250000
+banana [ 5 ] . pos . z = 13.000000
 banana [ 5 ] . type . x = B
 
 banana [ 6 ] . pos . x = -15.750000
 banana [ 6 ] . pos . y = 0.600000
-banana [ 6 ] . pos . z = -15.750000
+banana [ 6 ] . pos . z = 13.000000
 banana [ 6 ] . type . x = B
 
 banana [ 7 ] . pos . x = -1.750000
 banana [ 7 ] . pos . y = 0.600000
-banana [ 7 ] . pos . z = -1.750000
+banana [ 7 ] . pos . z = 13.000000
 banana [ 7 ] . type . x = B
 
 banana [ 8 ] . pos . x = -26.750000
 banana [ 8 ] . pos . y = 0.600000
-banana [ 8 ] . pos . z = -26.750000
+banana [ 8 ] . pos . z = 13.000000
 banana [ 8 ] . type . x = B
 
 banana [ 9 ] . pos . x = -49.750000
 banana [ 9 ] . pos . y = 0.600000
-banana [ 9 ] . pos . z = -49.750000
+banana [ 9 ] . pos . z = 13.000000
 banana [ 9 ] . type . x = B
 
 banana [ 10 ] . pos . x = -20.750000
 banana [ 10 ] . pos . y = 0.600000
-banana [ 10 ] . pos . z = -20.750000
+banana [ 10 ] . pos . z = 8.000000
 banana [ 10 ] . type . x = B
 
 banana [ 11 ] . pos . x = 8.250000
 banana [ 11 ] . pos . y = 0.600000
-banana [ 11 ] . pos . z = 8.250000
+banana [ 11 ] . pos . z = 8.000000
 banana [ 11 ] . type . x = B
 
 banana [ 12 ] . pos . x = 11.999990
 banana [ 12 ] . pos . y = 0.600000
-banana [ 12 ] . pos . z = 11.999990
+banana [ 12 ] . pos . z = 18.500000
 banana [ 12 ] . type . x = B
 
 banana [ 13 ] . pos . x = -49.750000
 banana [ 13 ] . pos . y = 0.600000
-banana [ 13 ] . pos . z = -49.750000
+banana [ 13 ] . pos . z = -2.000000
 banana [ 13 ] . type . x = N
 
 banana [ 14 ] . pos . x = -48.750000
 banana [ 14 ] . pos . y = 0.600000
-banana [ 14 ] . pos . z = -48.750000
+banana [ 14 ] . pos . z = 3.000000
 banana [ 14 ] . type . x = N
 
 banana [ 15 ] . pos . x = -50.750000
 banana [ 15 ] . pos . y = 0.600000
-banana [ 15 ] . pos . z = -50.750000
+banana [ 15 ] . pos . z = 3.000000
 banana [ 15 ] . type . x = N
 
 banana [ 16 ] . pos . x = -23.750000
 banana [ 16 ] . pos . y = 0.600000
-banana [ 16 ] . pos . z = -23.750000
+banana [ 16 ] . pos . z = 3.000000
 banana [ 16 ] . type . x = N
 
 banana [ 17 ] . pos . x = -25.750000
 banana [ 17 ] . pos . y = 0.600000
-banana [ 17 ] . pos . z = -25.750000
+banana [ 17 ] . pos . z = 3.000000
 banana [ 17 ] . type . x = N
 
 banana [ 18 ] . pos . x = -24.750000
 banana [ 18 ] . pos . y = 0.600000
-banana [ 18 ] . pos . z = -24.750000
+banana [ 18 ] . pos . z = -2.000000
 banana [ 18 ] . type . x = N
 
 banana [ 19 ] . pos . x = -16.750000
 banana [ 19 ] . pos . y = 0.600000
-banana [ 19 ] . pos . z = -16.750000
+banana [ 19 ] . pos . z = 3.000000
 banana [ 19 ] . type . x = N
 
 banana [ 20 ] . pos . x = -18.750000
 banana [ 20 ] . pos . y = 0.600000
-banana [ 20 ] . pos . z = -18.750000
+banana [ 20 ] . pos . z = 3.000000
 banana [ 20 ] . type . x = N
 
 banana [ 21 ] . pos . x = -17.750000
 banana [ 21 ] . pos . y = 0.600000
-banana [ 21 ] . pos . z = -17.750000
+banana [ 21 ] . pos . z = -2.000000
 banana [ 21 ] . type . x = N
 
 banana [ 22 ] . pos . x = 0.250000
 banana [ 22 ] . pos . y = 0.600000
-banana [ 22 ] . pos . z = 0.250000
+banana [ 22 ] . pos . z = -2.000000
 banana [ 22 ] . type . x = N
 
 banana [ 23 ] . pos . x = 17.250000
 banana [ 23 ] . pos . y = 0.600000
-banana [ 23 ] . pos . z = 17.250000
+banana [ 23 ] . pos . z = -2.000000
 banana [ 23 ] . type . x = N
 
 banana [ 24 ] . pos . x = 34.250000
 banana [ 24 ] . pos . y = 0.600000
-banana [ 24 ] . pos . z = 34.250000
+banana [ 24 ] . pos . z = -2.000000
 banana [ 24 ] . type . x = N
 
 banana [ 25 ] . pos . x = -48.750000
 banana [ 25 ] . pos . y = 0.600000
-banana [ 25 ] . pos . z = -48.750000
+banana [ 25 ] . pos . z = 8.000000
 banana [ 25 ] . type . x = N
 
 banana [ 26 ] . pos . x = -50.750000
 banana [ 26 ] . pos . y = 0.600000
-banana [ 26 ] . pos . z = -50.750000
+banana [ 26 ] . pos . z = 8.000000
 banana [ 26 ] . type . x = N
 
 banana [ 27 ] . pos . x = -49.750000
 banana [ 27 ] . pos . y = 0.600000
-banana [ 27 ] . pos . z = -49.750000
+banana [ 27 ] . pos . z = 9.000000
 banana [ 27 ] . type . x = N
 
 banana [ 28 ] . pos . x = 26.250000
 banana [ 28 ] . pos . y = 0.600000
-banana [ 28 ] . pos . z = 26.250000
+banana [ 28 ] . pos . z = 3.000000
 banana [ 28 ] . type . x = N
 
 banana [ 29 ] . pos . x = 28.250000
 banana [ 29 ] . pos . y = 0.600000
-banana [ 29 ] . pos . z = 28.250000
+banana [ 29 ] . pos . z = 3.000000
 banana [ 29 ] . type . x = N
 
 banana [ 30 ] . pos . x = 19.250000
 banana [ 30 ] . pos . y = 0.600000
-banana [ 30 ] . pos . z = 19.250000
+banana [ 30 ] . pos . z = 3.000000
 banana [ 30 ] . type . x = N
 
 banana [ 31 ] . pos . x = 21.250000
 banana [ 31 ] . pos . y = 0.600000
-banana [ 31 ] . pos . z = 21.250000
+banana [ 31 ] . pos . z = 3.000000
 banana [ 31 ] . type . x = N
 
 banana [ 32 ] . pos . x = 6.250000
 banana [ 32 ] . pos . y = 0.600000
-banana [ 32 ] . pos . z = 6.250000
+banana [ 32 ] . pos . z = 3.000000
 banana [ 32 ] . type . x = N
 
 banana [ 33 ] . pos . x = 4.250000
 banana [ 33 ] . pos . y = 0.600000
-banana [ 33 ] . pos . z = 4.250000
+banana [ 33 ] . pos . z = 3.000000
 banana [ 33 ] . type . x = N
 
 banana [ 34 ] . pos . x = 13.250000
 banana [ 34 ] . pos . y = 0.600000
-banana [ 34 ] . pos . z = 13.250000
+banana [ 34 ] . pos . z = 3.000000
 banana [ 34 ] . type . x = N
 
 banana [ 35 ] . pos . x = 11.250000
 banana [ 35 ] . pos . y = 0.600000
-banana [ 35 ] . pos . z = 11.250000
+banana [ 35 ] . pos . z = 3.000000
 banana [ 35 ] . type . x = N
 
 banana [ 36 ] . pos . x = 26.250000
 banana [ 36 ] . pos . y = 0.600000
-banana [ 36 ] . pos . z = 26.250000
+banana [ 36 ] . pos . z = 8.000000
 banana [ 36 ] . type . x = N
 
 banana [ 37 ] . pos . x = 19.250000
 banana [ 37 ] . pos . y = 0.600000
-banana [ 37 ] . pos . z = 19.250000
+banana [ 37 ] . pos . z = 13.000000
 banana [ 37 ] . type . x = N
 
 banana [ 38 ] . pos . x = 21.250000
 banana [ 38 ] . pos . y = 0.600000
-banana [ 38 ] . pos . z = 21.250000
+banana [ 38 ] . pos . z = 13.000000
 banana [ 38 ] . type . x = N
 
 banana [ 39 ] . pos . x = 13.250000
 banana [ 39 ] . pos . y = 0.600000
-banana [ 39 ] . pos . z = 13.250000
+banana [ 39 ] . pos . z = 13.000000
 banana [ 39 ] . type . x = N
 
 banana [ 40 ] . pos . x = 11.250000
 banana [ 40 ] . pos . y = 0.600000
-banana [ 40 ] . pos . z = 11.250000
+banana [ 40 ] . pos . z = 13.000000
 banana [ 40 ] . type . x = N
 
 banana [ 41 ] . pos . x = 24.499990
 banana [ 41 ] . pos . y = 0.600000
-banana [ 41 ] . pos . z = 24.499990
+banana [ 41 ] . pos . z = 18.500000
 banana [ 41 ] . type . x = N
 
 banana [ 42 ] . pos . x = 19.500000
 banana [ 42 ] . pos . y = 0.600000
-banana [ 42 ] . pos . z = 19.500000
+banana [ 42 ] . pos . z = 18.500000
 banana [ 42 ] . type . x = N
 
 banana [ 43 ] . pos . x = 14.499990
 banana [ 43 ] . pos . y = 0.600000
-banana [ 43 ] . pos . z = 14.499990
+banana [ 43 ] . pos . z = 18.500000
 banana [ 43 ] . type . x = N
 
+background [ 0 ] . name . x = NIG_CITY00
+background [ 1 ] . name . x = NIG_GROUND
+background [ 2 ] . name . x = NIG_GROUND_SEP
+background [ 3 ] . name . x = NIG_MOUNTAIN
+background [ 4 ] . name . x = NIG_SKY
+background [ 5 ] . name . x = NIG_DINER02
+background [ 6 ] . name . x = NIG_DINER02_NEON
+background [ 7 ] . name . x = NIG_TREE
+background [ 8 ] . name . x = NIG_SIGN00
+background [ 9 ] . name . x = NIG_DINER00
+background [ 10 ] . name . x = NIG_DINER00_NEON
+background [ 11 ] . name . x = NIG_DINER01
+background [ 12 ] . name . x = NIG_DINER01_NEON
+background [ 13 ] . name . x = NIG_DINER02
+background [ 14 ] . name . x = NIG_DINER02_NEON
+background [ 15 ] . name . x = NIG_TREE
+background [ 16 ] . name . x = NIG_TREE
+background [ 17 ] . name . x = NIG_DINER00
+background [ 18 ] . name . x = NIG_DINER00_NEON
+background [ 19 ] . name . x = NIG_DINER02
+background [ 20 ] . name . x = NIG_DINER02_NEON
+background [ 21 ] . name . x = NIG_SIGN00
+background [ 22 ] . name . x = NIG_TREE
