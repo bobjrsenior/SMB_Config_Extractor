@@ -1,0 +1,57 @@
+fallout [ 0 ] . pos . y = 0.000000
+
+start [ 0 ] . pos . x = 0.000000
+start [ 0 ] . pos . y = 1.000000
+start [ 0 ] . pos . z = 0.000000
+start [ 0 ] . rot . x = 0.000000
+start [ 0 ] . rot . y = 0.000000
+start [ 0 ] . rot . z = 0.000000
+
+goal [ 0 ] . pos . x = 0.000000
+goal [ 0 ] . pos . y = 0.000000
+goal [ 0 ] . pos . z = -4.000000
+goal [ 0 ] . rot . x = 0.000000
+goal [ 0 ] . rot . y = 180.000000
+goal [ 0 ] . rot . z = 0.000000
+goal [ 0 ] . type . x = R
+
+bumper [ 0 ] . pos . x = 0.000000
+bumper [ 0 ] . pos . y = 0.000000
+bumper [ 0 ] . pos . z = 2.500000
+bumper [ 0 ] . rot . x = 0.000000
+bumper [ 0 ] . rot . y = 0.000000
+bumper [ 0 ] . rot . z = 0.000000
+bumper [ 0 ] . scl . x = 1.000000
+bumper [ 0 ] . scl . y = 1.000000
+bumper [ 0 ] . scl . z = 1.000000
+
+bumper [ 1 ] . pos . x = 8.000000
+bumper [ 1 ] . pos . y = -12.000000
+bumper [ 1 ] . pos . z = 2.500000
+bumper [ 1 ] . rot . x = 0.000000
+bumper [ 1 ] . rot . y = 0.000000
+bumper [ 1 ] . rot . z = 0.000000
+bumper [ 1 ] . scl . x = 3.000000
+bumper [ 1 ] . scl . y = 2.000000
+bumper [ 1 ] . scl . z = 1.000000
+
+jamabar [ 0 ] . pos . x = 3.000000
+jamabar [ 0 ] . pos . y = 0.000000
+jamabar [ 0 ] . pos . z = 5.000000
+jamabar [ 0 ] . rot . x = 0.000000
+jamabar [ 0 ] . rot . y = 0.000000
+jamabar [ 0 ] . rot . z = 0.000000
+jamabar [ 0 ] . scl . x = 1.000000
+jamabar [ 0 ] . scl . y = 1.000000
+jamabar [ 0 ] . scl . z = 1.000000
+
+banana [ 0 ] . pos . x = -1.000000
+banana [ 0 ] . pos . y = 1.000000
+banana [ 0 ] . pos . z = -1.000000
+banana [ 0 ] . type . x = B
+
+banana [ 1 ] . pos . x = 1.000000
+banana [ 1 ] . pos . y = 1.000000
+banana [ 1 ] . pos . z = 1.000000
+banana [ 1 ] . type . x = N
+
