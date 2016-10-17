@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		FILE* lz = fopen(argv[i], "r");
+		FILE* lz = fopen(argv[i], "rb");
 		if (lz == NULL) {
 			printf("ERROR: %s not found\n", argv[i]);
 			continue;
@@ -388,10 +388,7 @@ int main(int argc, char* argv[]) {
 
 				memset(animFrames, 0, 120 * sizeof(AnimFrame));
 
-				printf("ANIM OFFSET: %d\n", animationFrameOffset);
-
 				fseek(lz, animationFrameOffset, SEEK_SET);
-
 				int numXRot = READINT(lz);
 				int offsetXRot = READINT(lz);
 				int numYRot = READINT(lz);
@@ -648,6 +645,7 @@ int main(int argc, char* argv[]) {
 				fprintf(outfile, "animobj [ %d ] . center . x = %f\n", numAnims, xPosCenter);
 				fprintf(outfile, "animobj [ %d ] . center . y = %f\n", numAnims, xPosCenter);
 				fprintf(outfile, "animobj [ %d ] . center . z = %f\n", numAnims, xPosCenter);
+				fprintf(outfile, "\n");
 
 				FILE* animFile = fopen(animFilename, "w");
 
@@ -661,13 +659,11 @@ int main(int argc, char* argv[]) {
 					fprintf(animFile, "frame [ %d ] . rot . x = %f\n", k, animFrames[k].xRot + xRotCenter);
 					fprintf(animFile, "frame [ %d ] . rot . y = %f\n", k, animFrames[k].yRot + yRotCenter);
 					fprintf(animFile, "frame [ %d ] . rot . z = %f\n", k, animFrames[k].zRot + zRotCenter);
+
+					fprintf(animFile, "\n");
 				}
 				fclose(animFile);
 
-			}
-
-			if (numAnims) {
-				fprintf(outfile, "\n");
 			}
 		}
 
