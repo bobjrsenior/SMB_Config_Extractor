@@ -643,11 +643,11 @@ int main(int argc, char* argv[]) {
 
 				// Third Pass: Write the information
 
-				fprintf(outfile, "animobj [ %d ] . file . x = %s\n", j, animFilename);
-				fprintf(outfile, "animobj [ %d ] . name . x = %s\n", j, modelName);
-				fprintf(outfile, "animobj [ %d ] . center . x = %f\n", j, xPosCenter);
-				fprintf(outfile, "animobj [ %d ] . center . y = %f\n", j, xPosCenter);
-				fprintf(outfile, "animobj [ %d ] . center . z = %f\n", j, xPosCenter);
+				fprintf(outfile, "animobj [ %d ] . file . x = %s\n", numAnims, animFilename);
+				fprintf(outfile, "animobj [ %d ] . name . x = %s\n", numAnims, modelName);
+				fprintf(outfile, "animobj [ %d ] . center . x = %f\n", numAnims, xPosCenter);
+				fprintf(outfile, "animobj [ %d ] . center . y = %f\n", numAnims, xPosCenter);
+				fprintf(outfile, "animobj [ %d ] . center . z = %f\n", numAnims, xPosCenter);
 
 				FILE* animFile = fopen(animFilename, "w");
 
