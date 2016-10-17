@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -10,6 +14,16 @@ typedef struct {
 	int number;
 	int offset;
 }ConfigObject;
+
+typedef struct {
+	float time;
+	float xPos;
+	float yPos;
+	float zPos;
+	float xRot;
+	float yRot;
+	float zRot;
+}AnimFrame;
 
 float readFloat(FILE* file) {
 	char floatStr[5];
@@ -25,13 +39,36 @@ float readRot(FILE* file) {
 	return angle;
 }
 
+int insert(AnimFrame frameTimes[], int count, float value) {
+
+	int position = -1;
+	for (int i = 0; i < count; ++i) {
+		if (frameTimes[i].time == value) {
+			return 0;
+		}
+		else if (frameTimes[i].time > value) {
+			position = i;
+			break;
+		}
+	}
+	if (position == -1) {
+		frameTimes[count].time = value;
+		return 1;
+	}
+	for (int i = count; i > position; --i) {
+		frameTimes[i] = frameTimes[i - 1];
+	}
+	frameTimes[position].time = value;
+	return 1;
+}
+
 int main(int argc, char* argv[]) {
 	if (argc <= 1) {
 		printf("Add level paths as command line params");
 	}
 
 	for (int i = 1; i < argc; ++i) {
-		int length = strlen(argv[i]);
+		int length = (int) strlen(argv[i]);
 		if (argv[i][length - 1] == 'z') {
 			printf("Warning: This might be a COMPRESSED lz file\nMake sure this is a RAW lz file\nFile: %s\nPress Y to continue or N to skip\n", argv[i]);
 			char c;
@@ -51,6 +88,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
+		ConfigObject collisionFields;
 		ConfigObject startPositions;
 		ConfigObject falloutY;
 		ConfigObject goals;
@@ -75,8 +113,13 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-
-		fseek(lz, 16, SEEK_SET);
+		if (game == SMB1) {
+			collisionFields.number = READINT(lz);
+			collisionFields.offset = READINT(lz);
+		}
+		else if (game == SMB2) {
+			fseek(lz, 8, SEEK_SET);
+		}
 		startPositions.offset = READINT(lz);
 
 		falloutY.number = 1;
@@ -112,7 +155,7 @@ int main(int argc, char* argv[]) {
 
 		char outfileName[512];
 		sscanf(argv[i], "%507s", outfileName);
-		length = strlen(outfileName);
+		length = (int) strlen(outfileName);
 		outfileName[length++] = '.';
 		outfileName[length++] = 't';
 		outfileName[length++] = 'x';
@@ -287,6 +330,348 @@ int main(int argc, char* argv[]) {
 
 			fprintf(outfile, "\n");
 		}
+
+		if (game == SMB1) {
+			int numAnims = 0;
+			fseek(lz, collisionFields.offset, SEEK_SET);
+
+			for (int j = 0; j < collisionFields.number; ++j) {
+
+
+				float xPosCenter = readFloat(lz);
+				float yPosCenter = readFloat(lz);
+				float zPosCenter = readFloat(lz);
+
+				float xRotCenter = readRot(lz);
+				float yRotCenter = readRot(lz);
+				float zRotCenter = readRot(lz);
+
+				fseek(lz, 2, SEEK_CUR);
+
+				int animationFrameOffset = READINT(lz);
+
+				if (!animationFrameOffset) {
+					fseek(lz, 172, SEEK_CUR);
+					continue;
+				}
+
+				++numAnims;
+
+				int nameOffsetOffset = READINT(lz);
+
+				int position = ftell(lz);
+
+				fseek(lz, nameOffsetOffset, SEEK_SET);
+				int nameOffset = READINT(lz);
+				fseek(lz, nameOffset, SEEK_SET);
+				char modelName[512];
+				char animFilename[512];
+
+				fscanf(lz, "%501s", modelName);
+				fseek(lz, position, SEEK_SET);
+
+				strcpy(animFilename, modelName);
+
+				int length = (int) strlen(animFilename);
+				animFilename[length + 0] = 'a';
+				animFilename[length + 1] = 'n';
+				animFilename[length + 2] = 'i';
+				animFilename[length + 3] = 'm';
+				animFilename[length + 4] = '.';
+				animFilename[length + 5] = 't';
+				animFilename[length + 6] = 'x';
+				animFilename[length + 7] = 't';
+				animFilename[length + 8] = '\0';
+
+				int numFrames = 0;
+				AnimFrame animFrames[120];
+
+				memset(animFrames, 0, 120 * sizeof(AnimFrame));
+
+				printf("ANIM OFFSET: %d\n", animationFrameOffset);
+
+				fseek(lz, animationFrameOffset, SEEK_SET);
+
+				int numXRot = READINT(lz);
+				int offsetXRot = READINT(lz);
+				int numYRot = READINT(lz);
+				int offsetYRot = READINT(lz);
+				int numZRot = READINT(lz);
+				int offsetZRot = READINT(lz);
+
+				int numXPos = READINT(lz);
+				int offsetXPos = READINT(lz);
+				int numYPos = READINT(lz);
+				int offsetYPos = READINT(lz);
+				int numZPos = READINT(lz);
+				int offsetZPos = READINT(lz);
+
+				// First Pass: Collect Frame Times
+
+				fseek(lz, offsetXRot + 4, SEEK_SET);
+				for (int k = 0; k < numXRot; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+				fseek(lz, offsetYRot + 4, SEEK_SET);
+				for (int k = 0; k < numYRot; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+				fseek(lz, offsetZRot + 4, SEEK_SET);
+				for (int k = 0; k < numZRot; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+
+				fseek(lz, offsetXPos + 4, SEEK_SET);
+				for (int k = 0; k < numXPos; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+				fseek(lz, offsetYPos + 4, SEEK_SET);
+				for (int k = 0; k < numYPos; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+				fseek(lz, offsetZPos + 4, SEEK_SET);
+				for (int k = 0; k < numZPos; ++k) {
+					numFrames += insert(animFrames, numFrames, readFloat(lz));
+					fseek(lz, 16, SEEK_CUR);
+				}
+
+				// Second Pass: Collect Frame Data
+
+				for (int k = 0; k < numFrames; ++k) {
+
+					float prevTime = 0;
+					float prevAmount = 0;
+					char found = 0;
+
+					// Go all from data for this axis
+					fseek(lz, offsetXRot + 4, SEEK_SET);
+					for (int l = 0; l < numXRot; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].xRot = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].xRot = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+					if (!found) {
+						animFrames[k].xRot = 0;
+					}
+
+					found = 0;
+
+					// Go all from data for this axis
+					fseek(lz, (offsetYRot + 4), SEEK_SET);
+					for (int l = 0; l < numYRot; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].yRot = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].yRot = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+
+					if (!found) {
+						animFrames[k].yRot = 0;
+					}
+
+					found = 0;
+					// Go all from data for this axis
+					fseek(lz, (offsetZRot + 4), SEEK_SET);
+					for (int l = 0; l < numZRot; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].zRot = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].zRot = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+
+					if (!found) {
+						animFrames[k].zRot = 0;
+					}
+
+					found = 0;
+					// Go all from data for this axis
+					fseek(lz, (offsetXPos + 4), SEEK_SET);
+					for (int l = 0; l < numXPos; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].xPos = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].xPos = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+					if (!found) {
+						animFrames[k].xPos = 0;
+					}
+
+					found = 0;
+					// Go all from data for this axis
+					fseek(lz, (offsetYPos + 4), SEEK_SET);
+					for (int l = 0; l < numYPos; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].yPos = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].yPos = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+					if (!found) {
+						animFrames[k].yPos = 0;
+					}
+
+					found = 0;
+					// Go all from data for this axis
+					fseek(lz, (offsetZPos + 4), SEEK_SET);
+					for (int l = 0; l < numZPos; ++l) {
+						// Get the time and translation/rotation
+						float time = readFloat(lz);
+						float amount = readFloat(lz);
+
+						// If times match up, insert it
+						if (time == animFrames[k].time) {
+							animFrames[k].zPos = amount;
+							found = 1;
+							break;
+						}// If the time is too far, extrapolate
+						else if (time > animFrames[k].time) {
+							float fractionTime = time / prevTime;
+							float fractionAmount = (prevAmount + amount) * fractionTime;
+							animFrames[k].zPos = fractionAmount;
+							found = 1;
+							break;
+						}
+						prevTime = time;
+						prevAmount = amount;
+						fseek(lz, 12, SEEK_CUR);
+					}
+
+					if (!found) {
+						animFrames[k].zPos = 0;
+					}
+
+				}
+
+
+				fseek(lz, position, SEEK_SET);
+				fseek(lz, 168, SEEK_CUR);
+
+				// Third Pass: Write the information
+
+				fprintf(outfile, "animobj [ %d ] . file . x = %s\n", j, animFilename);
+				fprintf(outfile, "animobj [ %d ] . name . x = %s\n", j, modelName);
+				fprintf(outfile, "animobj [ %d ] . center . x = %f\n", j, xPosCenter);
+				fprintf(outfile, "animobj [ %d ] . center . y = %f\n", j, xPosCenter);
+				fprintf(outfile, "animobj [ %d ] . center . z = %f\n", j, xPosCenter);
+
+				FILE* animFile = fopen(animFilename, "w");
+
+				for (int k = 0; k < numFrames; ++k) {
+					fprintf(animFile, "frame [ %d ] . time . x = %f\n", k, animFrames[k].time);
+
+					fprintf(animFile, "frame [ %d ] . pos . x = %f\n", k, animFrames[k].xPos);
+					fprintf(animFile, "frame [ %d ] . pos . y = %f\n", k, animFrames[k].yPos);
+					fprintf(animFile, "frame [ %d ] . pos . z = %f\n", k, animFrames[k].zPos);
+
+					fprintf(animFile, "frame [ %d ] . rot . x = %f\n", k, animFrames[k].xRot + xRotCenter);
+					fprintf(animFile, "frame [ %d ] . rot . y = %f\n", k, animFrames[k].yRot + yRotCenter);
+					fprintf(animFile, "frame [ %d ] . rot . z = %f\n", k, animFrames[k].zRot + zRotCenter);
+				}
+				fclose(animFile);
+
+			}
+
+			if (numAnims) {
+				fprintf(outfile, "\n");
+			}
+		}
+
+		
 
 		fseek(lz, backgrounds.offset, SEEK_SET);
 
