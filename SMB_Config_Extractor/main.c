@@ -102,14 +102,14 @@ int main(int argc, char* argv[]) {
 		fseek(lz, 4, SEEK_SET);
 
 		int gameCheck = READINT(lz);
-		if (gameCheck == 0x64) {
+		if (gameCheck == 0x64 || gameCheck == 0x78) {
 			game = SMB1;
 		}
 		else if (gameCheck == 0x447A0000) {
 			game = SMB2;
 		}
 		else {
-			printf("Unsupported or Unrecognized SMB Game: %s\n", argv[i]);
+			printf("Unsupported or Unrecognized SMB Game: %s\n\nAssuming game is SMB1", argv[i]);
 			continue;
 		}
 
