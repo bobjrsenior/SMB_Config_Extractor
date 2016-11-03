@@ -13,6 +13,12 @@ inline uint32_t readInt(FILE* file) {
 	uint32_t c4 = getc(file);
 	return (c1 | c2 | c3 | c4);
 }
+
+inline uint16_t readShort(FILE* file) {
+	uint32_t c1 = getc(file) << 8;
+	uint32_t c2 = getc(file);
+	return (uint16_t) (c1 | c2);
+}
 #define SMB1 0
 #define SMB2 1
 
@@ -45,6 +51,22 @@ float readRot(FILE* file) {
 	return angle;
 }
 
+inline uint16_t readBigShort(FILE* file) {
+	char rotStr[3];
+	fscanf(file, "%c%c", (rotStr + 1), (rotStr + 0));
+	return *((uint16_t*)rotStr);
+}
+
+inline uint32_t readBigInt(FILE* file) {
+	uint32_t c1 = getc(file);
+	uint32_t c2 = getc(file) << 8;
+	uint32_t c3 = getc(file) << 16;
+	uint32_t c4 = getc(file) << 24;
+	return (c1 | c2 | c3 | c4);
+}
+
+int decompress(char* filename);
+
 int insert(AnimFrame frameTimes[], int count, float value) {
 
 	int position = -1;
@@ -76,13 +98,20 @@ int main(int argc, char* argv[]) {
 	}
 
 	for (int i = 1; i < argc; ++i) {
-		int length = (int) strlen(argv[i]);
-		if (argv[i][length - 1] == 'z') {
-			printf("Warning: This might be a COMPRESSED lz file\nMake sure this is a RAW lz file\nFile: %s\nPress 'C' to continue or anything other key to skip\n", argv[i]);
+		char filename[512];
+		int decomp = 0;
+		int filelength = (int) strlen(argv[i]);
+		sscanf(argv[i], "%507s", filename);
+		if (filename[filelength - 1] == 'z') {
+			printf("Warning: This might be a COMPRESSED lz file\nMake sure you know what type of file it is\nFile: %s\nOptions\nPress 'C' to continue (raw lz file)\nPress 'D' to decompress (compressed LZ file)\nPress any other key to skip\n", argv[i]);
 			char c;
 			scanf("%c", &c);
-			if (c == 'Y' || c == 'y') {
+			if (c == 'C' || c == 'c') {
 				printf("Continuing\n");
+			}
+			else if (c == 'D' || c == 'd') {
+				printf("Decompressing\n");
+				decomp = 1;
 			}
 			else {
 				printf("Skipping\n");
@@ -90,7 +119,19 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		extractConfig(argv[i]);
+		if (decomp) {
+			if (decompress(filename) == 0) {
+				filename[filelength++] = '.';
+				filename[filelength++] = 'r';
+				filename[filelength++] = 'a';
+				filename[filelength++] = 'w';
+				filename[filelength++] = '\0';
+			}
+			else {
+				printf("Failed to decompress %s\nSkipping\n", filename);
+			}
+		}
+		extractConfig(filename);
 	}
 
 
@@ -99,8 +140,6 @@ int main(int argc, char* argv[]) {
 }
 
 void extractConfig(char* filename) {
-	int length = (int)strlen(filename);
-
 	FILE* lz = fopen(filename, "rb");
 	if (lz == NULL) {
 		printf("ERROR: %s not found\n", filename);
@@ -124,12 +163,12 @@ void extractConfig(char* filename) {
 	if (gameCheck == 0x64 || gameCheck == 0x78) {
 		game = SMB1;
 	}
-	else if (gameCheck == 0x447A0000) {
+	else if (gameCheck == 0x447A0000 || gameCheck == 0x44E10000) {
 		game = SMB2;
 	}
 	else {
-		printf("Unsupported or Unrecognized SMB Game: %s\n\nAssuming game is SMB1", filename);
-		return;
+		printf("Unsupported or Unrecognized SMB Game: %s\n\nAssuming game is SMB1\nPlease report this level to bobjrsenior\n", filename);
+		game = SMB1;
 	}
 
 	if (game == SMB1) {
@@ -137,7 +176,7 @@ void extractConfig(char* filename) {
 		collisionFields.offset = readInt(lz);
 	}
 	else if (game == SMB2) {
-		fseek(lz, 8, SEEK_SET);
+		fseek(lz, 8, SEEK_CUR);
 	}
 	startPositions.offset = readInt(lz);
 
@@ -174,12 +213,12 @@ void extractConfig(char* filename) {
 
 	char outfileName[512];
 	sscanf(filename, "%507s", outfileName);
-	length = (int)strlen(outfileName);
-	outfileName[length++] = '.';
-	outfileName[length++] = 't';
-	outfileName[length++] = 'x';
-	outfileName[length++] = 't';
-	outfileName[length++] = '\0';
+	int fileLength = (int)strlen(outfileName);
+	outfileName[fileLength++] = '.';
+	outfileName[fileLength++] = 't';
+	outfileName[fileLength++] = 'x';
+	outfileName[fileLength++] = 't';
+	outfileName[fileLength++] = '\0';
 
 	FILE* outfile = fopen(outfileName, "w");
 
@@ -225,7 +264,7 @@ void extractConfig(char* filename) {
 		float yRot = readRot(lz);
 		float zRot = readRot(lz);
 
-		uint16_t shortType = (getc(lz) << 8) + (getc(lz));
+		uint16_t shortType = readShort(lz);
 		char type = 'B';
 		if (game == SMB1) {
 			if (shortType == 0x4200) {
@@ -391,16 +430,16 @@ void extractConfig(char* filename) {
 
 			strcpy(animFilename, modelName);
 
-			int length = (int)strlen(animFilename);
-			animFilename[length + 0] = 'a';
-			animFilename[length + 1] = 'n';
-			animFilename[length + 2] = 'i';
-			animFilename[length + 3] = 'm';
-			animFilename[length + 4] = '.';
-			animFilename[length + 5] = 't';
-			animFilename[length + 6] = 'x';
-			animFilename[length + 7] = 't';
-			animFilename[length + 8] = '\0';
+			int animObjlength = (int)strlen(animFilename);
+			animFilename[animObjlength + 0] = 'a';
+			animFilename[animObjlength + 1] = 'n';
+			animFilename[animObjlength + 2] = 'i';
+			animFilename[animObjlength + 3] = 'm';
+			animFilename[animObjlength + 4] = '.';
+			animFilename[animObjlength + 5] = 't';
+			animFilename[animObjlength + 6] = 'x';
+			animFilename[animObjlength + 7] = 't';
+			animFilename[animObjlength + 8] = '\0';
 
 			int numFrames = 0;
 			AnimFrame animFrames[120];
@@ -662,8 +701,8 @@ void extractConfig(char* filename) {
 			fprintf(outfile, "animobj [ %d ] . file . x = %s\n", numAnims, animFilename);
 			fprintf(outfile, "animobj [ %d ] . name . x = %s\n", numAnims, modelName);
 			fprintf(outfile, "animobj [ %d ] . center . x = %f\n", numAnims, xPosCenter);
-			fprintf(outfile, "animobj [ %d ] . center . y = %f\n", numAnims, xPosCenter);
-			fprintf(outfile, "animobj [ %d ] . center . z = %f\n", numAnims, xPosCenter);
+			fprintf(outfile, "animobj [ %d ] . center . y = %f\n", numAnims, yPosCenter);
+			fprintf(outfile, "animobj [ %d ] . center . z = %f\n", numAnims, zPosCenter);
 			fprintf(outfile, "\n");
 
 			FILE* animFile = fopen(animFilename, "w");
@@ -717,4 +756,136 @@ void extractConfig(char* filename) {
 
 	fclose(lz);
 	fclose(outfile);
+}
+
+int decompress(char* filename) {
+	// Try to open it
+	FILE* lz = fopen(filename, "rb");
+	if (lz == NULL) {
+		printf("ERROR: File not found: %s\n", filename);
+		return -1;
+	}
+	printf("Decompressing %s\n", filename);
+
+	// Create a temp file for the unfixed lz (SMB lz has a slightly different header than FF7 LZS)
+	FILE* normal = tmpfile();
+
+	// Unfix the header (Turn it back into normal FF7 LZSS)
+	uint32_t csize = readBigInt(lz) - 8;
+	fseek(lz, 4, SEEK_CUR);
+	putc(csize & 0xFF, normal);
+	putc((csize >> 8) & 0xFF, normal);
+	putc((csize >> 16) & 0xFF, normal);
+	putc((csize >> 24) & 0xFF, normal);
+	for (int j = 0; j < (int)(csize); j++) {
+		char c = (char)getc(lz);
+		putc(c, normal);
+	}
+	fclose(lz);
+	fflush(normal);
+	fseek(normal, 0, SEEK_SET);
+
+	// Make the output file name
+	char outfileName[512];
+	sscanf(filename, "%507s", outfileName);
+	{
+		int nameLength = (int)strlen(outfileName);
+		outfileName[nameLength++] = '.';
+		outfileName[nameLength++] = 'r';
+		outfileName[nameLength++] = 'a';
+		outfileName[nameLength++] = 'w';
+		outfileName[nameLength++] = '\0';
+	}
+
+	// Open the output file for both reading and writing separately
+	// This is because you read bytes from the output buffer to write to the end and prevents constant fseeking
+	FILE* outfile = fopen(outfileName, "wb");
+	FILE* outfileR = fopen(outfileName, "rb");
+
+
+	// The size the the lzss data + 4 bytes for the header
+	uint32_t filesize = readBigInt(normal) + 4;
+	int lastPercentDone = -1;
+
+	// Loop until we reach the end of the data or end of the file
+	while ((unsigned)ftell(normal) < filesize && !feof(normal)) {
+
+		float percentDone = (100.0f * ftell(normal)) / filesize;
+		int intPercentDone = (int)percentDone;
+		if (intPercentDone % 10 == 0 && intPercentDone != lastPercentDone) {
+			printf("%d%% Completed\n", intPercentDone);
+			lastPercentDone = intPercentDone;
+		}
+
+		// Read the first control block
+		// Read right to left, each bit specifies how the the next 8 spots of data will be
+		// 0 means write the byte directly to the output
+		// 1 represents there will be reference (2 byte)
+		uint8_t block = (uint8_t)getc(normal);
+
+		// Go through every bit in the control block
+		for (int j = 0; j < 8 && (unsigned)ftell(normal) < filesize && !feof(normal); ++j) {
+			// Literal
+			if (block & 0x01) {
+				putc(getc(normal), outfile);
+			}// Reference
+			else {
+				uint16_t reference = readBigShort(normal);
+
+				// Length is the last four bits + 3
+				// Any less than a lengh of 3 i pointess since a reference takes up 3 bytes
+				// Length is the last nibble (last 4 bits) of the 2 reference bytes
+				int length = (reference & 0x000F) + 3;
+
+				// Offset if is all 8 bits in the first reference byte and the first nibble (4 bits) in the second reference byte
+				// The nibble from the second reference byte comes before the first reference byte
+				// EX: reference bytes = 0x12 0x34
+				//     offset = 0x312
+				int offset = ((reference & 0xFF00) >> 8) | ((reference & 0x00F0) << 4);
+
+				// Convert the offset to how many bytes away from the end of the buffer to start reading from
+				int backSet = ((ftell(outfile) - 18 - offset) & 0xFFF);
+
+				// Calculate the actual location in the file
+				int readLocation = ftell(outfile) - backSet;
+
+				// Handle case where the offset is past the beginning of the file
+				while (readLocation < 0 && length > 0) {
+					putc(0, outfile);
+
+					--length;
+					++readLocation;
+				}
+
+				// Flush the file so we don't read something that hasn't been properly updated
+				fflush(outfile);
+
+				// Seek to the reference position
+				fseek(outfileR, readLocation, SEEK_SET);
+
+				// Read the reference bytes until we reach length bytes written
+				while (length > 0) {
+
+					putc(getc(outfileR), outfile);
+					// Flush the file so we don't read something that hasn't been properly updated
+					fflush(outfile);
+					--length;
+				}
+
+
+
+			}
+			// Go to the next reference bit in the block
+			block = block >> 1;
+		}
+
+
+	}
+
+	fclose(outfileR);
+	fclose(outfile);
+	fclose(normal);
+
+	printf("Finished Decompressing %s\n", filename);
+	return 0;
 }
