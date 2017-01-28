@@ -163,7 +163,7 @@ void extractConfig(char* filename) {
 	if (gameCheck == 0x64 || gameCheck == 0x78) {
 		game = SMB1;
 	}
-	else if (gameCheck == 0x447A0000 || gameCheck == 0x44E10000) {
+	else if (gameCheck == 0x447A0000 || gameCheck == 0x44E10000 || gameCheck == 0x42C80000) {
 		game = SMB2;
 	}
 	else {
@@ -771,7 +771,7 @@ int decompress(char* filename) {
 	FILE* normal = tmpfile();
 
 	// Unfix the header (Turn it back into normal FF7 LZSS)
-	uint32_t csize = readBigInt(lz) - 8;
+	uint32_t csize = readInt(lz) - 8;
 	fseek(lz, 4, SEEK_CUR);
 	putc(csize & 0xFF, normal);
 	putc((csize >> 8) & 0xFF, normal);
@@ -804,7 +804,8 @@ int decompress(char* filename) {
 
 
 	// The size the the lzss data + 4 bytes for the header
-	uint32_t filesize = readBigInt(normal) + 4;
+	uint32_t filesize = readInt(normal) + 4;
+	printf("FILESIZE: %d\n", filesize);
 	int lastPercentDone = -1;
 
 	// Loop until we reach the end of the data or end of the file
@@ -830,7 +831,7 @@ int decompress(char* filename) {
 				putc(getc(normal), outfile);
 			}// Reference
 			else {
-				uint16_t reference = readBigShort(normal);
+				uint16_t reference = readShort(normal);
 
 				// Length is the last four bits + 3
 				// Any less than a lengh of 3 i pointess since a reference takes up 3 bytes
@@ -857,18 +858,29 @@ int decompress(char* filename) {
 					++readLocation;
 				}
 
-				// Flush the file so we don't read something that hasn't been properly updated
-				fflush(outfile);
+				// Flush the file if data needs to be read from the outfile
+				if (length > 0) {
+					fflush(outfile);
+				}
 
 				// Seek to the reference position
 				fseek(outfileR, readLocation, SEEK_SET);
 
+				// Get the number of bytes until the current end of file (will need to flush once that is reached)
+				int buffer = ftell(outfile) - readLocation;
+				int curBuffer = 0;
 				// Read the reference bytes until we reach length bytes written
 				while (length > 0) {
 
+					// If at the previous end of file, flush the new data
+					if (curBuffer == buffer) {
+						// Flush the file so we don't read something that hasn't been properly updated
+						fflush(outfile);
+
+						curBuffer = 0;
+					}
 					putc(getc(outfileR), outfile);
-					// Flush the file so we don't read something that hasn't been properly updated
-					fflush(outfile);
+					++curBuffer;
 					--length;
 				}
 
