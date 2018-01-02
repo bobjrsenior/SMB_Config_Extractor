@@ -103,20 +103,8 @@ int main(int argc, char* argv[]) {
 		int filelength = (int) strlen(argv[i]);
 		sscanf(argv[i], "%507s", filename);
 		if (filename[filelength - 1] == 'z') {
-			printf("Warning: This might be a COMPRESSED lz file\nMake sure you know what type of file it is\nFile: %s\nOptions\nPress 'C' to continue (raw lz file)\nPress 'D' to decompress (compressed LZ file)\nPress any other key to skip\n", argv[i]);
-			char c;
-			scanf("%c", &c);
-			if (c == 'C' || c == 'c') {
-				printf("Continuing\n");
-			}
-			else if (c == 'D' || c == 'd') {
-				printf("Decompressing\n");
-				decomp = 1;
-			}
-			else {
-				printf("Skipping\n");
-				continue;
-			}
+			printf("Decompressing\n");
+			decomp = 1;
 		}
 
 		if (decomp) {
@@ -771,7 +759,7 @@ int decompress(char* filename) {
 	FILE* normal = tmpfile();
 
 	// Unfix the header (Turn it back into normal FF7 LZSS)
-	uint32_t csize = readInt(lz) - 8;
+	uint32_t csize = readBigInt(lz) - 8;
 	fseek(lz, 4, SEEK_CUR);
 	putc(csize & 0xFF, normal);
 	putc((csize >> 8) & 0xFF, normal);
@@ -804,7 +792,7 @@ int decompress(char* filename) {
 
 
 	// The size the the lzss data + 4 bytes for the header
-	uint32_t filesize = readInt(normal) + 4;
+	uint32_t filesize = readBigInt(normal) + 4;
 	printf("FILESIZE: %d\n", filesize);
 	int lastPercentDone = -1;
 
