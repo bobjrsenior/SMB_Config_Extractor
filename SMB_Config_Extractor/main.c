@@ -148,7 +148,7 @@ void extractConfig(char* filename) {
 	fseek(lz, 4, SEEK_SET);
 
 	int gameCheck = readInt(lz);
-	if (gameCheck == 0x64 || gameCheck == 0x78) {
+	if (gameCheck == 0x64 || gameCheck == 0x78 || gameCheck == 0x0000001A) {
 		game = SMB1;
 	}
 	else if (gameCheck == 0x447A0000 || gameCheck == 0x44E10000 || gameCheck == 0x42C80000) {
@@ -430,7 +430,7 @@ void extractConfig(char* filename) {
 			animFilename[animObjlength + 8] = '\0';
 
 			int numFrames = 0;
-			AnimFrame animFrames[120];
+			AnimFrame animFrames[4096];
 
 			memset(animFrames, 0, 120 * sizeof(AnimFrame));
 
