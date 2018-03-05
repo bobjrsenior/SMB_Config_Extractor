@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "configExtractor.h"
+
 inline uint32_t readInt(FILE* file) {
 	uint32_t c1 = getc(file) << 24;
 	uint32_t c2 = getc(file) << 16;
@@ -90,8 +92,6 @@ int insert(AnimFrame frameTimes[], int count, float value) {
 	return 1;
 }
 
-void extractConfig(char* filename);
-
 int main(int argc, char* argv[]) {
 	if (argc <= 1) {
 		printf("Add level paths as command line params");
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
 				printf("Failed to decompress %s\nSkipping\n", filename);
 			}
 		}
-		extractConfig(filename);
+		extractConfig(filename, SMB2);
 	}
 
 
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-void extractConfig(char* filename) {
+void extractConfig2(char* filename) {
 	FILE* lz = fopen(filename, "rb");
 	if (lz == NULL) {
 		printf("ERROR: %s not found\n", filename);

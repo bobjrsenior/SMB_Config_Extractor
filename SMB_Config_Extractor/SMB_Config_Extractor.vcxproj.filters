@@ -18,5 +18,22 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="xmlbuddy.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="configExtractor.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="xmlbuddy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="configExtractor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FunctionsAndDefines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

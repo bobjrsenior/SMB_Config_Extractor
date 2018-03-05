@@ -142,7 +142,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="configExtractor.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="xmlbuddy.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="configExtractor.h" />
+    <ClInclude Include="FunctionsAndDefines.h" />
+    <ClInclude Include="xmlbuddy.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
