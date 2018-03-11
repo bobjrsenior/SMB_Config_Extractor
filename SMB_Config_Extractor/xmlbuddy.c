@@ -147,6 +147,7 @@ int addValStr(XMLBuddy *xmlBuddy, char *value) {
 	if (xmlBuddy->state == STATE_OPENING_TAG) {
 		putc('>', xmlBuddy->output);
 		xmlBuddy->state = STATE_GENERAL;
+		xmlBuddy->indentation++;
 	}
 	else if (xmlBuddy->state != STATE_GENERAL) {
 		return ERROR_BAD_STATE;
@@ -161,6 +162,7 @@ int addValInt(XMLBuddy *xmlBuddy, int value) {
 	if (xmlBuddy->state == STATE_OPENING_TAG) {
 		putc('>', xmlBuddy->output);
 		xmlBuddy->state = STATE_GENERAL;
+		xmlBuddy->indentation++;
 	}
 	else if (xmlBuddy->state != STATE_GENERAL) {
 		return ERROR_BAD_STATE;
@@ -175,6 +177,7 @@ int addValDouble(XMLBuddy *xmlBuddy, double value) {
 	if (xmlBuddy->state == STATE_OPENING_TAG) {
 		putc('>', xmlBuddy->output);
 		xmlBuddy->state = STATE_GENERAL;
+		xmlBuddy->indentation++;
 	}
 	else if (xmlBuddy->state != STATE_GENERAL) {
 		return ERROR_BAD_STATE;
@@ -222,6 +225,12 @@ static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
 		break;
 	case TAG_INITIAL_ROTATION:
 		fputs("initialRotation ", xmlBuddy->output);
+		break;
+	case TAG_ANIM_SEESAW_TYPE:
+		fputs("animSeesawType ", xmlBuddy->output);
+		break;
+	case TAG_CONVEYOR_SPEED:
+		fputs("conveyorSpeed ", xmlBuddy->output);
 		break;
 	case TAG_COLLISION_GRID:
 		fputs("collisionGrid ", xmlBuddy->output);
