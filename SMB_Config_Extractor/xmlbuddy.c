@@ -262,6 +262,15 @@ static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
 	case TAG_BANANA:
 		fputs("banana ", xmlBuddy->output);
 		break;
+	case TAG_CONE:
+		fputs("cone ", xmlBuddy->output);
+		break;
+	case TAG_SPHERE:
+		fputs("sphere ", xmlBuddy->output);
+		break;
+	case TAG_CYLINDER:
+		fputs("cylinder ", xmlBuddy->output);
+		break;
 	case TAG_FALLOUT_VOLUME:
 		fputs("falloutVolume ", xmlBuddy->output);
 	case TAG_LEVEL_MODEL:

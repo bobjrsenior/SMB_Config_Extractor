@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "FunctionsAndDefines.h"
 #include "configExtractor.h"
 
 inline uint32_t readInt(FILE* file) {
@@ -39,18 +40,11 @@ typedef struct {
 	float zRot;
 }AnimFrame;
 
+/* TODO: Fix the endiannes issue in this file
 float readFloat(FILE* file) {
 	char floatStr[5];
 	fscanf(file, "%c%c%c%c", (floatStr + 3), (floatStr + 2), (floatStr + 1), (floatStr + 0));
 	return *((float*)floatStr);
-}
-
-float readRot(FILE* file) {
-	char rotStr[3];
-	fscanf(file, "%c%c", (rotStr + 1), (rotStr + 0));
-	float angle = (float)*((unsigned short*)rotStr);
-	angle = angle * 360.0f / 65536.0f;
-	return angle;
 }
 
 inline uint16_t readBigShort(FILE* file) {
@@ -65,6 +59,15 @@ inline uint32_t readBigInt(FILE* file) {
 	uint32_t c3 = getc(file) << 16;
 	uint32_t c4 = getc(file) << 24;
 	return (c1 | c2 | c3 | c4);
+}
+*/
+
+float readRot(FILE* file) {
+	char rotStr[3];
+	fscanf(file, "%c%c", (rotStr + 1), (rotStr + 0));
+	float angle = (float)*((unsigned short*)rotStr);
+	angle = angle * 360.0f / 65536.0f;
+	return angle;
 }
 
 int decompress(char* filename);
