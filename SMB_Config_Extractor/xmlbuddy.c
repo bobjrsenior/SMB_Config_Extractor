@@ -276,6 +276,9 @@ static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
 	case TAG_LEVEL_MODEL:
 		fputs("levelModel ", xmlBuddy->output);
 		break;
+	case TAG_REFLECTIVE_MODEL:
+		fputs("reflectiveModel ", xmlBuddy->output);
+		break;
 	case TAG_WORMHOLE:
 		fputs("wormhole ", xmlBuddy->output);
 		break;
