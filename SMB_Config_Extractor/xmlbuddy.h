@@ -1,9 +1,10 @@
 #pragma once
 #include <stdio.h>
+#include <stdint.h>
 
 #define TAG_STACK_SIZE 20
 
-enum Tag_Type {
+enum TAG_TYPE {
 	TAG_TITLE,
 	TAG_MODEL_IMPORT,
 	TAG_START,
@@ -17,6 +18,9 @@ enum Tag_Type {
 	TAG_ROTATION_CENTER,
 	TAG_INITIAL_ROTATION,
 	TAG_ANIM_SEESAW_TYPE,
+	TAG_SEESAW_SENSITIVITY,
+	TAG_SEESAW_STIFFNESS,
+	TAG_SEESAW_BOUNDS,
 	TAG_CONVEYOR_SPEED,
 	TAG_COLLISION_GRID,
 	TAG_STEP,
@@ -35,6 +39,7 @@ enum Tag_Type {
 	TAG_LEVEL_MODEL,
 	TAG_REFLECTIVE_MODEL,
 	TAG_WORMHOLE,
+	TAG_SWITCH,
 	TAG_DESTINATION_NAME,
 	TAG_ANIM_LOOP_TIME,
 	TAG_ANIM_KEYFRAMES,
@@ -45,10 +50,12 @@ enum Tag_Type {
 	TAG_ROT_Y,
 	TAG_ROT_Z,
 	TAG_KEYFRAME,
+	TAG_ANIM_GROUP_ID,
+	TAG_ANIM_INITIAL_STATE,
 	TAG_INVALID_TAG
 };
 
-enum Attribute_Type {
+enum ATTRIBUTE_TYPE {
 	ATTR_VERSION,
 	ATTR_TYPE,
 	ATTR_X,
@@ -65,7 +72,7 @@ enum ERROR_CODE {
 	NO_ERROR
 };
 
-enum State {
+enum STATE {
 	STATE_NEW,
 	STATE_GENERAL,
 	STATE_OPENING_TAG,
@@ -75,9 +82,10 @@ enum State {
 
 typedef struct XMLBuddy {
 	FILE *output;
-	enum State state;
+	enum STATE state;
 	int prettyPrint;
 	int indentation;
+	int endTagOnNewLine;
 	int tagStack[TAG_STACK_SIZE];
 }XMLBuddy;
 
@@ -89,8 +97,8 @@ void flushXMLBuddy(XMLBuddy *xmlBuddy);
 //int startTag(XMLBuddy *xmlBuddy, char *tagName);
 //int endTag(XMLBuddy *xmlBuddy, char *tagName);
 
-int startTagType(XMLBuddy *xmlBuddy, enum Tag_Type tagType);
-//int endTagType(XMLBuddy *xmlBuddy, enum Tag_Type tagType);
+int startTagType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType);
+//int endTagType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType);
 
 int endTag(XMLBuddy *xmlBuddy);
 
@@ -99,10 +107,11 @@ int endTag(XMLBuddy *xmlBuddy);
 //int addAttrDouble(XMLBuddy *xmlBuddy, char *attrName, double attrValue);
 
 
-int addAttrTypeStr(XMLBuddy *xmlBuddy, enum Attribute_Type attr, char *attrValue);
-int addAttrTypeInt(XMLBuddy *xmlBuddy, enum Attribute_Type attr, int attrValue);
-int addAttrTypeDouble(XMLBuddy *xmlBuddy, enum Attribute_Type attr, double attrValue);
+int addAttrTypeStr(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, char *attrValue);
+int addAttrTypeInt(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, int attrValue);
+int addAttrTypeDouble(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, double attrValue);
 
 int addValStr(XMLBuddy *xmlBuddy, char *value);
 int addValInt(XMLBuddy *xmlBuddy, int value);
+int addValUInt32(XMLBuddy *xmlBuddy, uint32_t value);
 int addValDouble(XMLBuddy *xmlBuddy, double value);

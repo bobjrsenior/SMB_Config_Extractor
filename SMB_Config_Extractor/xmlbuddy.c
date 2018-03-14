@@ -1,9 +1,10 @@
 #include "xmlbuddy.h"
 
 #include <stdio.h>
+#include <inttypes.h>
 
-static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType);
-static int printAttrName(XMLBuddy *xmlBuddy, enum Attribute_Type attrType);
+static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType);
+static int printAttrName(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attrType);
 
 static int handleIndentation(XMLBuddy *xmlBuddy) {
 	fputc('\n', xmlBuddy->output);
@@ -27,6 +28,7 @@ XMLBuddy *initXMLBuddy(char *filename, XMLBuddy *xmlBuddy, int prettyPrint) {
 	xmlBuddy->state = STATE_GENERAL;
 	xmlBuddy->prettyPrint = prettyPrint;
 	xmlBuddy->indentation = 0;
+	xmlBuddy->endTagOnNewLine = 1;
 	for (int i = 0; i < TAG_STACK_SIZE; i++) {
 		xmlBuddy->tagStack[i] = TAG_INVALID_TAG;
 	}
@@ -44,6 +46,7 @@ XMLBuddy *initXMLBuddyFile(FILE *file, XMLBuddy *xmlBuddy, int prettyPrint) {
 	xmlBuddy->state = STATE_GENERAL;
 	xmlBuddy->prettyPrint = prettyPrint;
 	xmlBuddy->indentation = 0;
+	xmlBuddy->endTagOnNewLine = 1;
 	for (int i = 0; i < TAG_STACK_SIZE; i++) {
 		xmlBuddy->tagStack[i] = TAG_INVALID_TAG;
 	}
@@ -61,7 +64,7 @@ void flushXMLBuddy(XMLBuddy *xmlBuddy) {
 	fflush(xmlBuddy->output);
 }
 
-int startTagType(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
+int startTagType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 	if (xmlBuddy->state == STATE_OPENING_TAG) {
 		putc('>', xmlBuddy->output);
 		xmlBuddy->state = STATE_GENERAL;
@@ -95,7 +98,10 @@ int endTag(XMLBuddy *xmlBuddy) {
 	}
 
 	xmlBuddy->indentation--;
-	handleIndentation(xmlBuddy);
+	if (xmlBuddy->endTagOnNewLine) {
+		handleIndentation(xmlBuddy);
+		xmlBuddy->endTagOnNewLine = 1;
+	}
 
 	fputs("</", xmlBuddy->output);
 	printTagName(xmlBuddy, xmlBuddy->tagStack[xmlBuddy->indentation]);
@@ -104,7 +110,7 @@ int endTag(XMLBuddy *xmlBuddy) {
 	return NO_ERROR;
 }
 
-int addAttrTypeStr(XMLBuddy *xmlBuddy, enum Attribute_Type attr, char *attrValue) {
+int addAttrTypeStr(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, char *attrValue) {
 	if (xmlBuddy->state != STATE_OPENING_TAG) {
 		return ERROR_BAD_STATE;
 	}
@@ -114,10 +120,11 @@ int addAttrTypeStr(XMLBuddy *xmlBuddy, enum Attribute_Type attr, char *attrValue
 	fputs(attrValue, xmlBuddy->output);
 	fputs("\" ", xmlBuddy->output);
 
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
-int addAttrTypeInt(XMLBuddy *xmlBuddy, enum Attribute_Type attr, int attrValue) {
+int addAttrTypeInt(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, int attrValue) {
 	if (xmlBuddy->state != STATE_OPENING_TAG) {
 		return ERROR_BAD_STATE;
 	}
@@ -127,10 +134,11 @@ int addAttrTypeInt(XMLBuddy *xmlBuddy, enum Attribute_Type attr, int attrValue) 
 	fprintf(xmlBuddy->output, "%d", attrValue);
 	fputs("\" ", xmlBuddy->output);
 
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
-int addAttrTypeDouble(XMLBuddy *xmlBuddy, enum Attribute_Type attr, double attrValue) {
+int addAttrTypeDouble(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attr, double attrValue) {
 	if (xmlBuddy->state != STATE_OPENING_TAG) {
 		return ERROR_BAD_STATE;
 	}
@@ -140,6 +148,7 @@ int addAttrTypeDouble(XMLBuddy *xmlBuddy, enum Attribute_Type attr, double attrV
 	fprintf(xmlBuddy->output, "%f", attrValue);
 	fputs("\" ", xmlBuddy->output);
 
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
@@ -155,6 +164,7 @@ int addValStr(XMLBuddy *xmlBuddy, char *value) {
 
 	fputs(value, xmlBuddy->output);
 
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
@@ -170,6 +180,23 @@ int addValInt(XMLBuddy *xmlBuddy, int value) {
 
 	fprintf(xmlBuddy->output, "%d", value);
 
+	xmlBuddy->endTagOnNewLine = 0;
+	return NO_ERROR;
+}
+
+int addValUInt32(XMLBuddy *xmlBuddy, uint32_t value) {
+	if (xmlBuddy->state == STATE_OPENING_TAG) {
+		putc('>', xmlBuddy->output);
+		xmlBuddy->state = STATE_GENERAL;
+		xmlBuddy->indentation++;
+	}
+	else if (xmlBuddy->state != STATE_GENERAL) {
+		return ERROR_BAD_STATE;
+	}
+
+	fprintf(xmlBuddy->output, "%" PRIu32, value);
+	
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
@@ -185,10 +212,11 @@ int addValDouble(XMLBuddy *xmlBuddy, double value) {
 
 	fprintf(xmlBuddy->output, "%f", value);
 
+	xmlBuddy->endTagOnNewLine = 0;
 	return NO_ERROR;
 }
 
-static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
+static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 	switch (tagType) {
 	case TAG_TITLE:
 		fputs("superMonkeyBallStage", xmlBuddy->output);
@@ -200,125 +228,143 @@ static int printTagName(XMLBuddy *xmlBuddy, enum Tag_Type tagType) {
 		fputs("start", xmlBuddy->output);
 		break;
 	case TAG_NAME:
-		fputs("name ", xmlBuddy->output);
+		fputs("name", xmlBuddy->output);
 		break;
 	case TAG_POSITION:
-		fputs("position ", xmlBuddy->output);
+		fputs("position", xmlBuddy->output);
 		break;
 	case TAG_ROTATION:
-		fputs("rotation ", xmlBuddy->output);
+		fputs("rotation", xmlBuddy->output);
 		break;
 	case TAG_SCALE:
-		fputs("scale ", xmlBuddy->output);
+		fputs("scale", xmlBuddy->output);
 		break;
 	case TAG_BACKGROUND_MODEL:
-		fputs("backgroundModel ", xmlBuddy->output);
+		fputs("backgroundModel", xmlBuddy->output);
 		break;
 	case TAG_FALLOUT_PLANE:
-		fputs("falloutPlane ", xmlBuddy->output);
+		fputs("falloutPlane", xmlBuddy->output);
 		break;
 	case TAG_ITEM_GROUP:
-		fputs("itemGroup ", xmlBuddy->output);
+		fputs("itemGroup", xmlBuddy->output);
 		break;
 	case TAG_ROTATION_CENTER:
-		fputs("rotationCenter ", xmlBuddy->output);
+		fputs("rotationCenter", xmlBuddy->output);
 		break;
 	case TAG_INITIAL_ROTATION:
-		fputs("initialRotation ", xmlBuddy->output);
+		fputs("initialRotation", xmlBuddy->output);
 		break;
 	case TAG_ANIM_SEESAW_TYPE:
-		fputs("animSeesawType ", xmlBuddy->output);
+		fputs("animSeesawType", xmlBuddy->output);
+		break;
+	case TAG_SEESAW_SENSITIVITY:
+		fputs("seesawSensitivity", xmlBuddy->output);
+		break;
+	case TAG_SEESAW_STIFFNESS:
+		fputs("seesawResetStiffness", xmlBuddy->output);
+		break;
+	case TAG_SEESAW_BOUNDS:
+		fputs("seesawRotationBoundss", xmlBuddy->output);
 		break;
 	case TAG_CONVEYOR_SPEED:
-		fputs("conveyorSpeed ", xmlBuddy->output);
+		fputs("conveyorSpeed", xmlBuddy->output);
 		break;
 	case TAG_COLLISION_GRID:
-		fputs("collisionGrid ", xmlBuddy->output);
+		fputs("collisionGrid", xmlBuddy->output);
 		break;
 	case TAG_STEP:
-		fputs("step ", xmlBuddy->output);
+		fputs("step", xmlBuddy->output);
 		break;
 	case TAG_COUNT:
-		fputs("count ", xmlBuddy->output);
+		fputs("count", xmlBuddy->output);
 		break;
 	case TAG_COLLISION:
-		fputs("collision ", xmlBuddy->output);
+		fputs("collision", xmlBuddy->output);
 		break;
 	case TAG_OBJECT:
-		fputs("object ", xmlBuddy->output);
+		fputs("object", xmlBuddy->output);
 		break;
 	case TAG_GOAL:
-		fputs("goal ", xmlBuddy->output);
+		fputs("goal", xmlBuddy->output);
 		break;
 	case TAG_TYPE:
-		fputs("type ", xmlBuddy->output);
+		fputs("type", xmlBuddy->output);
 		break;
 	case TAG_BUMPER:
-		fputs("bumper ", xmlBuddy->output);
+		fputs("bumper", xmlBuddy->output);
 		break;
 	case TAG_JAMABAR:
-		fputs("jamabar ", xmlBuddy->output);
+		fputs("jamabar", xmlBuddy->output);
 		break;
 	case TAG_BANANA:
-		fputs("banana ", xmlBuddy->output);
+		fputs("banana", xmlBuddy->output);
 		break;
 	case TAG_CONE:
-		fputs("cone ", xmlBuddy->output);
+		fputs("cone", xmlBuddy->output);
 		break;
 	case TAG_SPHERE:
-		fputs("sphere ", xmlBuddy->output);
+		fputs("sphere", xmlBuddy->output);
 		break;
 	case TAG_CYLINDER:
-		fputs("cylinder ", xmlBuddy->output);
+		fputs("cylinder", xmlBuddy->output);
 		break;
 	case TAG_FALLOUT_VOLUME:
-		fputs("falloutVolume ", xmlBuddy->output);
+		fputs("falloutVolume", xmlBuddy->output);
 	case TAG_LEVEL_MODEL:
-		fputs("levelModel ", xmlBuddy->output);
+		fputs("levelModel", xmlBuddy->output);
 		break;
 	case TAG_REFLECTIVE_MODEL:
-		fputs("reflectiveModel ", xmlBuddy->output);
+		fputs("reflectiveModel", xmlBuddy->output);
 		break;
 	case TAG_WORMHOLE:
-		fputs("wormhole ", xmlBuddy->output);
+		fputs("wormhole", xmlBuddy->output);
+		break;
+	case TAG_SWITCH:
+		fputs("switch", xmlBuddy->output);
 		break;
 	case TAG_DESTINATION_NAME:
-		fputs("destinationName ", xmlBuddy->output);
+		fputs("destinationName", xmlBuddy->output);
 		break;
 	case TAG_ANIM_LOOP_TIME:
-		fputs("animLoopTime ", xmlBuddy->output);
+		fputs("animLoopTime", xmlBuddy->output);
 		break;
 	case TAG_ANIM_KEYFRAMES:
-		fputs("animKeyframes ", xmlBuddy->output);
+		fputs("animKeyframes", xmlBuddy->output);
 		break;
 	case TAG_POS_X:
-		fputs("posX ", xmlBuddy->output);
+		fputs("posX", xmlBuddy->output);
 		break;
 	case TAG_POS_Y:
-		fputs("posY ", xmlBuddy->output);
+		fputs("posY", xmlBuddy->output);
 		break;
 	case TAG_POS_Z:
-		fputs("posZ ", xmlBuddy->output);
+		fputs("posZ", xmlBuddy->output);
 		break;
 	case TAG_ROT_X:
-		fputs("rotX ", xmlBuddy->output);
+		fputs("rotX", xmlBuddy->output);
 		break;
 	case TAG_ROT_Y:
-		fputs("rotY ", xmlBuddy->output);
+		fputs("rotY", xmlBuddy->output);
 		break;
 	case TAG_ROT_Z:
-		fputs("rotZ ", xmlBuddy->output);
+		fputs("rotZ", xmlBuddy->output);
 		break;
 	case TAG_KEYFRAME:
-		fputs("keyframe ", xmlBuddy->output);
+		fputs("keyframe", xmlBuddy->output);
+		break;
+	case TAG_ANIM_GROUP_ID:
+		fputs("animGroupId", xmlBuddy->output);
+		break;
+	case TAG_ANIM_INITIAL_STATE:
+		fputs("animInitialState", xmlBuddy->output);
 		break;
 	default:
-		fputs("Invalid ", xmlBuddy->output);
+		fputs("Invalid", xmlBuddy->output);
 	}
 	return NO_ERROR;
 }
 
-static int printAttrName(XMLBuddy *xmlBuddy, enum Attribute_Type attrType) {
+static int printAttrName(XMLBuddy *xmlBuddy, enum ATTRIBUTE_TYPE attrType) {
 	switch (attrType) {
 	case ATTR_VERSION:
 		fputs("version=", xmlBuddy->output);

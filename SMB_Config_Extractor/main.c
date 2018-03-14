@@ -41,7 +41,7 @@ typedef struct {
 }AnimFrame;
 
 /* TODO: Fix the endiannes issue in this file
-float readFloat(FILE* file) {
+float readBigFloat(FILE* file) {
 	char floatStr[5];
 	fscanf(file, "%c%c%c%c", (floatStr + 3), (floatStr + 2), (floatStr + 1), (floatStr + 0));
 	return *((float*)floatStr);
@@ -215,7 +215,7 @@ void extractConfig2(char* filename) {
 
 	fseek(lz, falloutY.offset, SEEK_SET);
 
-	float falloutYYPos = readFloat(lz);
+	float falloutYYPos = readBigFloat(lz);
 	fprintf(outfile, "fallout [ 0 ] . pos . y = %f\n", falloutYYPos);
 
 	fprintf(outfile, "\n");
@@ -223,9 +223,9 @@ void extractConfig2(char* filename) {
 	fseek(lz, startPositions.offset, SEEK_SET);
 
 	for (int j = 0; j < startPositions.number; ++j) {
-		float xPos = readFloat(lz);
-		float yPos = readFloat(lz);
-		float zPos = readFloat(lz);
+		float xPos = readBigFloat(lz);
+		float yPos = readBigFloat(lz);
+		float zPos = readBigFloat(lz);
 
 		float xRot = readRot(lz);
 		float yRot = readRot(lz);
@@ -247,9 +247,9 @@ void extractConfig2(char* filename) {
 	fseek(lz, goals.offset, SEEK_SET);
 
 	for (int j = 0; j < goals.number; ++j) {
-		float xPos = readFloat(lz);
-		float yPos = readFloat(lz);
-		float zPos = readFloat(lz);
+		float xPos = readBigFloat(lz);
+		float yPos = readBigFloat(lz);
+		float zPos = readBigFloat(lz);
 
 		float xRot = readRot(lz);
 		float yRot = readRot(lz);
@@ -296,9 +296,9 @@ void extractConfig2(char* filename) {
 	fseek(lz, bumpers.offset, SEEK_SET);
 
 	for (int j = 0; j < bumpers.number; ++j) {
-		float xPos = readFloat(lz);
-		float yPos = readFloat(lz);
-		float zPos = readFloat(lz);
+		float xPos = readBigFloat(lz);
+		float yPos = readBigFloat(lz);
+		float zPos = readBigFloat(lz);
 
 		float xRot = readRot(lz);
 		float yRot = readRot(lz);
@@ -306,9 +306,9 @@ void extractConfig2(char* filename) {
 
 		fseek(lz, 2, SEEK_CUR);
 
-		float xScl = readFloat(lz);
-		float yScl = readFloat(lz);
-		float zScl = readFloat(lz);
+		float xScl = readBigFloat(lz);
+		float yScl = readBigFloat(lz);
+		float zScl = readBigFloat(lz);
 
 		fprintf(outfile, "bumper [ %d ] . pos . x = %f\n", j, xPos);
 		fprintf(outfile, "bumper [ %d ] . pos . y = %f\n", j, yPos);
@@ -328,9 +328,9 @@ void extractConfig2(char* filename) {
 	fseek(lz, jamabars.offset, SEEK_SET);
 
 	for (int j = 0; j < jamabars.number; ++j) {
-		float xPos = readFloat(lz);
-		float yPos = readFloat(lz);
-		float zPos = readFloat(lz);
+		float xPos = readBigFloat(lz);
+		float yPos = readBigFloat(lz);
+		float zPos = readBigFloat(lz);
 
 		float xRot = readRot(lz);
 		float yRot = readRot(lz);
@@ -338,9 +338,9 @@ void extractConfig2(char* filename) {
 
 		fseek(lz, 2, SEEK_CUR);
 
-		float xScl = readFloat(lz);
-		float yScl = readFloat(lz);
-		float zScl = readFloat(lz);
+		float xScl = readBigFloat(lz);
+		float yScl = readBigFloat(lz);
+		float zScl = readBigFloat(lz);
 
 		fprintf(outfile, "jamabar [ %d ] . pos . x = %f\n", j, xPos);
 		fprintf(outfile, "jamabar [ %d ] . pos . y = %f\n", j, yPos);
@@ -361,9 +361,9 @@ void extractConfig2(char* filename) {
 	fseek(lz, bananas.offset, SEEK_SET);
 
 	for (int j = 0; j < bananas.number; ++j) {
-		float xPos = readFloat(lz);
-		float yPos = readFloat(lz);
-		float zPos = readFloat(lz);
+		float xPos = readBigFloat(lz);
+		float yPos = readBigFloat(lz);
+		float zPos = readBigFloat(lz);
 
 		int intType = readInt(lz);
 		char type = 'N';
@@ -387,9 +387,9 @@ void extractConfig2(char* filename) {
 		for (int j = 0; j < collisionFields.number; ++j) {
 
 
-			float xPosCenter = readFloat(lz);
-			float yPosCenter = readFloat(lz);
-			float zPosCenter = readFloat(lz);
+			float xPosCenter = readBigFloat(lz);
+			float yPosCenter = readBigFloat(lz);
+			float zPosCenter = readBigFloat(lz);
 
 			float xRotCenter = readRot(lz);
 			float yRotCenter = readRot(lz);
@@ -456,38 +456,38 @@ void extractConfig2(char* filename) {
 
 			fseek(lz, offsetXRot + 4, SEEK_SET);
 			for (int k = 0; k < numXRot; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
 			fseek(lz, offsetYRot + 4, SEEK_SET);
 			for (int k = 0; k < numYRot; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
 			fseek(lz, offsetZRot + 4, SEEK_SET);
 			for (int k = 0; k < numZRot; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
 
 			fseek(lz, offsetXPos + 4, SEEK_SET);
 			for (int k = 0; k < numXPos; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
 			fseek(lz, offsetYPos + 4, SEEK_SET);
 			for (int k = 0; k < numYPos; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
 			fseek(lz, offsetZPos + 4, SEEK_SET);
 			for (int k = 0; k < numZPos; ++k) {
-				numFrames += insert(animFrames, numFrames, readFloat(lz));
+				numFrames += insert(animFrames, numFrames, readBigFloat(lz));
 				fseek(lz, 16, SEEK_CUR);
 			}
 
@@ -503,8 +503,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, offsetXRot + 4, SEEK_SET);
 				for (int l = 0; l < numXRot; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {
@@ -534,8 +534,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, (offsetYRot + 4), SEEK_SET);
 				for (int l = 0; l < numYRot; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {
@@ -565,8 +565,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, (offsetZRot + 4), SEEK_SET);
 				for (int l = 0; l < numZRot; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {
@@ -596,8 +596,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, (offsetXPos + 4), SEEK_SET);
 				for (int l = 0; l < numXPos; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {
@@ -626,8 +626,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, (offsetYPos + 4), SEEK_SET);
 				for (int l = 0; l < numYPos; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {
@@ -656,8 +656,8 @@ void extractConfig2(char* filename) {
 				fseek(lz, (offsetZPos + 4), SEEK_SET);
 				for (int l = 0; l < numZPos; ++l) {
 					// Get the time and translation/rotation
-					float time = readFloat(lz);
-					float amount = readFloat(lz);
+					float time = readBigFloat(lz);
+					float amount = readBigFloat(lz);
 
 					// If times match up, insert it
 					if (time == animFrames[k].time) {

@@ -5,6 +5,8 @@
 #include "FunctionsAndDefines.h"
 #include "xmlbuddy.h"
 
+#define MAX_NUM_WORMHOLES 256
+
 typedef struct CollisionGroup {
 	int x;
 }CollisionGroup;
@@ -45,6 +47,14 @@ enum Seesaw_Type {
 	SEESAW = 0x0002
 };
 
+enum SWITCH_TYPE {
+	PLAY = 0x0000,
+	PAUSE = 0x0001,
+	PLAY_BACWARD = 0x0002,
+	FAST_FORWARD = 0x0003,
+	REWIND = 0x0004
+};
+
 enum EASING {
 	CONSTANT = 0x00000000,
 	LINEAR = 0x00000001,
@@ -59,7 +69,7 @@ enum GOAL_TYPE {
 
 enum BANANA_TYPE {
 	SINGLE = 0x00000000,
-	BUNCH = 0x00000001,
+	BUNCH = 0x00000001
 };
 
 // File Reading Functions (Endianness handling)
@@ -67,6 +77,8 @@ static uint32_t(*readInt)(FILE*);
 static uint32_t(*readIntRev)(FILE*);
 static uint16_t(*readShort)(FILE*);
 static uint16_t(*readShortRev)(FILE*);
+static float(*readFloat)(FILE*);
+static float(*readFloatRev)(FILE*);
 
 // Config Helper Functions
 static ConfigObject readItem(FILE *input);
@@ -74,16 +86,21 @@ static VectorF32 readVectorF32(FILE *input);
 static VectorI16 readVectorI16(FILE *input, int eatPadding);
 static VectorF32 convertRot16ToF32(VectorI16 rotOriginal);
 static CollisionGroupHeader readCollisionGroupHeader(FILE *input);
+static int getWormholeIndex(uint32_t offset);
 
 // XML Buddy Helper Functions
-static void writeVectorF32(XMLBuddy *xmlBuddy, enum Tag_Type tagType, VectorF32 vectorF32);
-static void writeVectorI16(XMLBuddy *xmlBuddy, enum Tag_Type tagType, VectorI16 vectorI16);
+static void writeVectorF32(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorF32 vectorF32);
+static void writeVectorI16(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorI16 vectorI16);
 static void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType);
+static void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType);
+static void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value);
+static void writeTagWithInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, int value);
+static void writeTagWithFloatValue(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, float value);
 static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset);
 
 // Config Parser Functions
 static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
-static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum Tag_Type tagType, ConfigObject animData);
+static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, ConfigObject animData);
 static void copyFieldAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t animHeaderOffset);
 static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHeader item);
 static void copyGoals(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
@@ -97,6 +114,11 @@ static void copyFalloutVolumes(FILE *input, XMLBuddy *xmlBuddy, ConfigObject ite
 static void copyReflectiveModels(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyLevelModelInstances(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyLevelModelBs(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
+static void copySwitches(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
+static void copyWormholes(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
+
+static uint32_t wormHoleOffsets[MAX_NUM_WORMHOLES] = { 0 };
+static int wormholeCount = 0;
 
 void extractConfig(char *filename, int gameVersion) {
 	if (gameVersion != SMB2 && gameVersion != SMBX) {
@@ -125,12 +147,16 @@ void extractConfig(char *filename, int gameVersion) {
 		readIntRev = &readLittleInt;
 		readShort = &readBigShort;
 		readShortRev = &readLittleShort;
+		readFloat = &readBigFloat;
+		readFloatRev = &readLittleFloat;
 	}
 	else if (gameVersion == SMBX) {
 		readInt = &readLittleInt;
 		readIntRev = &readBigInt;
 		readShort = &readLittleShort;
 		readShortRev = &readBigShort;
+		readFloat = &readLittleFloat;
+		readFloat = &readBigFloat;
 	}
 
 	ConfigObject collisionFields;
@@ -192,17 +218,43 @@ static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject it
 		copyJamabars(input, xmlBuddy, jamabars);
 		ConfigObject bananas = readItem(input);                         // 0x5C     0x8    Bananas number/offset
 		copyBananas(input, xmlBuddy, bananas);
-		ConfigObject cones = readItem(input);                           // 0x64     0x8    cones number/offset
+		ConfigObject cones = readItem(input);                           // 0x64     0x8    Cones number/offset
 		copyCones(input, xmlBuddy, cones);
 		ConfigObject spheres = readItem(input);                         // 0x6C     0x8    Spheres number/offset
 		copySpheres(input, xmlBuddy, spheres);
 		ConfigObject cylinders = readItem(input);                       // 0x74     0x8    Cylinders number/offset
 		copyCylinders(input, xmlBuddy, cylinders);
-
-		// Amount to skip: Header size - curPosition in header
-		// TODO UPDATE THIS WHEN UPDATING ABOVE
-		fseek(input, 0x49C - 0x4C, SEEK_CUR);
-
+		ConfigObject falloutVolumes = readItem(input);                  // 0x7C     0x8    Fallout Volumes number/offset
+		copyFalloutVolumes(input, xmlBuddy, falloutVolumes);
+		ConfigObject reflectiveModels = readItem(input);                // 0x84     0x8    Reflective models number/offset
+		copyReflectiveModels(input, xmlBuddy, reflectiveModels);
+		ConfigObject levelModelInstances = readItem(input);             // 0x8C     0x8    Level Model Instances number/offset
+		// TODO copy Instances
+		ConfigObject levelModelBs = readItem(input);                    // 0x94     0x8    Level Model B number/offset
+		copyLevelModelBs(input, xmlBuddy, levelModelBs);
+		fseek(input, 0x8, SEEK_CUR);                                    // 0x9C     0x8    Unknown/Null
+		uint16_t animGroupID = readShort(input);                        // 0xA4     0x8    Animation Group ID
+		writeTagWithUInt32Value(xmlBuddy, TAG_ANIM_GROUP_ID, animGroupID);
+		fseek(input, 0x2, SEEK_CUR);                                    // 0xA6     0x2    Null
+		ConfigObject switches = readItem(input);                        // 0xA8     0x8    Switches number/offset
+		copySwitches(input, xmlBuddy, switches);
+		fseek(input, 0x4, SEEK_CUR);                                    // 0xB0     0x4    Unknown/Null
+		fseek(input, 0x4, SEEK_CUR);                                    // 0xB4     0x4    Offset to Mystery 5
+		float seesawSensitivity = readFloat(input);                     // 0xB8     0x4    Seesaw Sensitivity
+		writeTagWithFloatValue(xmlBuddy, TAG_SEESAW_SENSITIVITY, seesawSensitivity);
+		float seesawStiffness = readFloat(input);                       // 0xBC     0x4    Seesaw Stiffness
+		writeTagWithFloatValue(xmlBuddy, TAG_SEESAW_STIFFNESS, seesawStiffness);
+		float seesawBounds = readFloat(input);                          // 0xC0     0x4    Seesaw Bounds
+		writeTagWithFloatValue(xmlBuddy, TAG_SEESAW_BOUNDS, seesawBounds);
+		ConfigObject wormholes = readItem(input);                       // 0xC4     0x8    Wormholes number/offset
+		copyWormholes(input, xmlBuddy, wormholes);
+		uint32_t initialAnimState = readInt(input);                     // 0xCC     0x4    Initial Animation State
+		writeAnimType(xmlBuddy, TAG_ANIM_INITIAL_STATE, (uint16_t)initialAnimState);
+		fseek(input, 0x4, SEEK_CUR);                                    // 0xD0     0x4    Unknown/Null
+		float animationLoopPoint = readFloat(input);                    // 0xD4     0x4    Animation Loop Point
+		writeTagWithFloatValue(xmlBuddy, TAG_ANIM_LOOP_TIME, animationLoopPoint);
+		fseek(input, 0x4, SEEK_CUR);                                    // 0xD8     0x4    Offset to Mystery 11
+		fseek(input, 0x3C0, SEEK_CUR);                                  // 0xDC     0x3C0  Unknown/Null
 		endTag(xmlBuddy);
 	}
 	fseek(input, savePos, SEEK_SET);
@@ -231,7 +283,7 @@ static void copyFieldAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t animHea
 	fseek(input, savePos, SEEK_SET);
 }
 
-static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum Tag_Type tagType, ConfigObject animData) {
+static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, ConfigObject animData) {
 	if (animData.number == 0) return;
 	long savePos = ftell(input);
 	fseek(input, animData.offset, SEEK_SET);
@@ -242,7 +294,7 @@ static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum Tag_Typ
 		uint32_t easing = readInt(input);                               // 0x0      0x4    Easing
 		float time = readFloat(input);                                  // 0x4      0x4    Time (Seconds)
 		float value = readFloat(input);                                 // 0x8      0x4    Value (Amount: pos, rot, R/G/B, ect)
-
+		fseek(input, 0x8, SEEK_CUR);                                    // 0xC      0x8    Unknown/Null
 		startTagType(xmlBuddy, TAG_KEYFRAME);
 		addAttrTypeDouble(xmlBuddy, ATTR_TIME, time);
 		addAttrTypeDouble(xmlBuddy, ATTR_VALUE, value);
@@ -487,6 +539,84 @@ static void copyReflectiveModels(FILE *input, XMLBuddy *xmlBuddy, ConfigObject i
 	fseek(input, savePos, SEEK_SET);
 }
 
+static void copyLevelModelBs(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
+	if (item.number == 0 || item.offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, item.offset, SEEK_SET);
+
+	for (uint32_t i = 0; i < item.number; i++) {
+		startTagType(xmlBuddy, TAG_LEVEL_MODEL);
+		//                                                                 Offset   Size   Description
+		                                                                 // Level Model B
+		uint32_t levelModelAPointerOffset = readInt(input);             // 0x0      0x4    Offset to the Level Model A Pointer
+		long savePos2 = ftell(input);
+		fseek(input, levelModelAPointerOffset, SEEK_SET);
+		                                                                // Level Model A Pointer
+		fseek(input, 0x8, SEEK_CUR);                                    // 0x0      0x8    0x0000000000000001
+		uint32_t levelModelAOffset = readInt(input);                    // 0x8      0x4    Offset to Level Model A
+		fseek(input, levelModelAOffset, SEEK_SET);
+		                                                                 // Level Model A
+		fseek(input, 0x4, SEEK_CUR);                                    // 0x0      0x4    Null
+		uint32_t levelModelNameOffset = readInt(input);
+		writeAsciiName(input, xmlBuddy, levelModelNameOffset);
+
+		fseek(input, savePos2, SEEK_SET);
+		endTag(xmlBuddy);
+	}
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copySwitches(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
+	if (item.number == 0 || item.offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, item.offset, SEEK_SET);
+
+	for (uint32_t i = 0; i < item.number; i++) {
+		startTagType(xmlBuddy, TAG_SWITCH);
+		//                                                                 Offset   Size   Description
+		VectorF32 position = readVectorF32(input);                      // 0x0      0xC    Position (X, Y, Z)
+		writeVectorF32(xmlBuddy, TAG_POSITION, position);
+		VectorI16 rotOriginal = readVectorI16(input, 0);                // 0xC      0x6    Rotation (X, Y, Z)
+		VectorF32 rotation = convertRot16ToF32(rotOriginal);
+		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
+		uint16_t switchType = readShort(input);                         // 0x12     0x2    Switch Type
+		writeAnimType(xmlBuddy, TAG_TYPE, switchType);
+		uint16_t animGroupIDAffected = readShort(input);                // 0x14     0x2    Animation Group ID affected
+		startTagType(xmlBuddy, TAG_ANIM_GROUP_ID);
+		addValUInt32(xmlBuddy, (uint32_t)animGroupIDAffected);
+		endTag(xmlBuddy);
+		fseek(input, 0x2, SEEK_CUR);                                    // 0x16     0x2    Null
+
+		endTag(xmlBuddy);
+	}
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyWormholes(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
+	if (item.number == 0 || item.offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, item.offset, SEEK_SET);
+
+	for (uint32_t i = 0; i < item.number; i++) {
+		startTagType(xmlBuddy, TAG_WORMHOLE);
+		uint32_t offset = (uint32_t)ftell(input);
+		int wormHoleIndex = getWormholeIndex(offset);
+		writeTagWithInt32Value(xmlBuddy, TAG_NAME, wormHoleIndex);
+		//                                                                 Offset   Size   Description
+		fseek(input, 0x4, SEEK_CUR);                                    // 0x0      0x4    0x00000001
+		VectorF32 position = readVectorF32(input);                      // 0x4      0xC    Position (X, Y, Z)
+		writeVectorF32(xmlBuddy, TAG_POSITION, position);
+		VectorI16 rotOriginal = readVectorI16(input, 1);                // 0x10     0x8    Rotation (X, Y, Z, Padd)
+		VectorF32 rotation = convertRot16ToF32(rotOriginal);
+		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
+		uint32_t destOffset = readInt(input);                           // 0x18     0x4    Offset to destination wormhole
+		int destWormholeIndex = getWormholeIndex(destOffset);
+		writeTagWithInt32Value(xmlBuddy, TAG_DESTINATION_NAME, destWormholeIndex);
+		endTag(xmlBuddy);
+	}
+	fseek(input, savePos, SEEK_SET);
+}
+
 static ConfigObject readItem(FILE *input) {
 	ConfigObject configObject;
 	configObject.number = readInt(input);
@@ -498,7 +628,7 @@ static VectorF32 readVectorF32(FILE *input) {
 	VectorF32 vector32;
 	vector32.x = readFloat(input);
 	vector32.y = readFloat(input);
-	vector32.y = readFloat(input);
+	vector32.z = readFloat(input);
 	return vector32;
 }
 
@@ -506,13 +636,13 @@ static VectorI16 readVectorI16(FILE *input, int eatPadding) {
 	VectorI16 vector16;
 	vector16.x = readShort(input);
 	vector16.y = readShort(input);
-	vector16.y = readShort(input);
+	vector16.z = readShort(input);
 	if (eatPadding) readShort(input);
 	return vector16;
 }
 
 static VectorF32 convertRot16ToF32(VectorI16 rotOriginal) {
-	const double conversionFactor = 65536.0 / 360.0;
+	const double conversionFactor = 360.0 / 65536.0;
 	VectorF32 rotation;
 	rotation.x = (float)(conversionFactor * rotOriginal.x);
 	rotation.y = (float)(conversionFactor * rotOriginal.y);
@@ -534,7 +664,20 @@ static CollisionGroupHeader readCollisionGroupHeader(FILE *input) {
 	return colGroupHeader;
 }
 
-static void writeVectorF32(XMLBuddy *xmlBuddy, enum Tag_Type tagType, VectorF32 vectorF32) {
+static int getWormholeIndex(uint32_t offset) {
+	for (int i = 0; i < wormholeCount && i < MAX_NUM_WORMHOLES; i++) {
+		if (wormHoleOffsets[i] == offset) {
+			return i;
+		}
+	}
+	if (wormholeCount == MAX_NUM_WORMHOLES) {
+		return -1;
+	}
+	wormHoleOffsets[wormholeCount] = offset;
+	return wormholeCount++;
+}
+
+static void writeVectorF32(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorF32 vectorF32) {
 	startTagType(xmlBuddy, tagType);
 	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorF32.x);
 	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorF32.y);
@@ -542,7 +685,7 @@ static void writeVectorF32(XMLBuddy *xmlBuddy, enum Tag_Type tagType, VectorF32 
 	endTag(xmlBuddy);
 }
 
-static void writeVectorI16(XMLBuddy *xmlBuddy, enum Tag_Type tagType, VectorI16 vectorI16) {
+static void writeVectorI16(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorI16 vectorI16) {
 	startTagType(xmlBuddy, tagType);
 	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorI16.x);
 	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorI16.y);
@@ -566,6 +709,43 @@ static void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType) {
 	endTag(xmlBuddy);
 }
 
+static void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType) {
+	startTagType(xmlBuddy, tagType);
+	switch (switchType) {
+	case PLAY:
+		addValStr(xmlBuddy, "PLAY");
+		break;
+	case PAUSE:
+		addValStr(xmlBuddy, "PAUSE");
+		break;
+	case PLAY_BACWARD:
+		addValStr(xmlBuddy, "PLAY_BACKWARDS");
+		break;
+	case FAST_FORWARD:
+		addValStr(xmlBuddy, "FAST_FORWARD");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
+static void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value) {
+	startTagType(xmlBuddy, tagType);
+	addValUInt32(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
+static void writeTagWithInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, int value) {
+	startTagType(xmlBuddy, tagType);
+	addValInt(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
+static void writeTagWithFloatValue(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, float value) {
+	startTagType(xmlBuddy, tagType);
+	addValDouble(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
 static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset) {
 	if (nameOffset == 0) return;
 	long savePos = ftell(input);
@@ -574,7 +754,7 @@ static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset)
 
 	int index = 0;
 	while (1) {
-		uint8_t c = fgetc(input);
+		uint8_t c = (uint8_t)fgetc(input);
 		if (feof(input) || c == 0 || index >= 255) break;
 		nameBuff[index++] = c;
 	}
