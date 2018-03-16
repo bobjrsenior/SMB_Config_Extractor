@@ -216,6 +216,118 @@ int addValDouble(XMLBuddy *xmlBuddy, double value) {
 	return NO_ERROR;
 }
 
+void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType) {
+	startTagType(xmlBuddy, tagType);
+	switch (switchType) {
+	case PLAY:
+		addValStr(xmlBuddy, "PLAY");
+		break;
+	case PAUSE:
+		addValStr(xmlBuddy, "PAUSE");
+		break;
+	case PLAY_BACWARD:
+		addValStr(xmlBuddy, "PLAY_BACKWARDS");
+		break;
+	case FAST_FORWARD:
+		addValStr(xmlBuddy, "FAST_FORWARD");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
+void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value) {
+	startTagType(xmlBuddy, tagType);
+	addValUInt32(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
+void writeTagWithInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, int value) {
+	startTagType(xmlBuddy, tagType);
+	addValInt(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
+void writeTagWithFloatValue(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, float value) {
+	startTagType(xmlBuddy, tagType);
+	addValDouble(xmlBuddy, value);
+	endTag(xmlBuddy);
+}
+
+void writeVectorF32(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorF32 vectorF32) {
+	startTagType(xmlBuddy, tagType);
+	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorF32.x);
+	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorF32.y);
+	addAttrTypeDouble(xmlBuddy, ATTR_Z, vectorF32.z);
+	endTag(xmlBuddy);
+}
+
+void writeVectorI16(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorI16 vectorI16) {
+	startTagType(xmlBuddy, tagType);
+	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorI16.x);
+	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorI16.y);
+	addAttrTypeDouble(xmlBuddy, ATTR_Z, vectorI16.z);
+	endTag(xmlBuddy);
+}
+
+void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType) {
+	startTagType(xmlBuddy, TAG_ANIM_SEESAW_TYPE);
+	switch (seesawType) {
+	case LOOPING_ANIMATION:
+		addValStr(xmlBuddy, "LOOPING_ANIMATION");
+		break;
+	case PLAY_ONCE_ANIMATION:
+		addValStr(xmlBuddy, "PLAY_ONCE_ANIMATION");
+		break;
+	case SEESAW:
+		addValStr(xmlBuddy, "SEESAW");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
+void writeAnimEasingVal(XMLBuddy *xmlBuddy, uint32_t easingVal) {
+	switch (easingVal) {
+	case CONSTANT:
+		addValStr(xmlBuddy, "CONSTANT");
+		break;
+	case LINEAR:
+		addValStr(xmlBuddy, "LINEAR");
+		break;
+	case EASED:
+		addValStr(xmlBuddy, "EASED");
+		break;
+	}
+}
+
+void writeGoalType(XMLBuddy *xmlBuddy, uint16_t goalType) {
+	startTagType(xmlBuddy, TAG_TYPE);
+	switch (goalType) {
+	case BLUE:
+		addValStr(xmlBuddy, "blue");
+		break;
+	case GREEN:
+		addValStr(xmlBuddy, "green");
+		break;
+	case RED:
+		addValStr(xmlBuddy, "red");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
+void writeBananaType(XMLBuddy *xmlBuddy, uint32_t bananaType) {
+	startTagType(xmlBuddy, TAG_TYPE);
+	switch (bananaType) {
+	case SINGLE:
+		addValStr(xmlBuddy, "SINGLE");
+		break;
+	case BUNCH:
+		addValStr(xmlBuddy, "BUNCH");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
 static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 	switch (tagType) {
 	case TAG_TITLE:

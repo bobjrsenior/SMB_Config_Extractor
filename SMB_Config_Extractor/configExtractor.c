@@ -27,51 +27,6 @@ typedef struct {
 	uint32_t gridStepZCount;
 }CollisionGroupHeader;
 
-typedef struct {
-	float x;
-	float y;
-	float z;
-}VectorF32;
-
-typedef struct {
-	uint16_t x;
-	uint16_t y;
-	uint16_t z;
-}VectorI16;
-
-
-// Constants (Some may move into XMLBuddy enum itself)
-enum Seesaw_Type {
-	LOOPING_ANIMATION = 0x0000,
-	PLAY_ONCE_ANIMATION = 0x0001,
-	SEESAW = 0x0002
-};
-
-enum SWITCH_TYPE {
-	PLAY = 0x0000,
-	PAUSE = 0x0001,
-	PLAY_BACWARD = 0x0002,
-	FAST_FORWARD = 0x0003,
-	REWIND = 0x0004
-};
-
-enum EASING {
-	CONSTANT = 0x00000000,
-	LINEAR = 0x00000001,
-	EASED = 0x00000002
-};
-
-enum GOAL_TYPE {
-	BLUE = 0x0001,
-	GREEN = 0x0101,
-	RED = 0x0201
-};
-
-enum BANANA_TYPE {
-	SINGLE = 0x00000000,
-	BUNCH = 0x00000001
-};
-
 // File Reading Functions (Endianness handling)
 static uint32_t(*readInt)(FILE*);
 static uint32_t(*readIntRev)(FILE*);
@@ -89,13 +44,6 @@ static CollisionGroupHeader readCollisionGroupHeader(FILE *input);
 static int getWormholeIndex(uint32_t offset);
 
 // XML Buddy Helper Functions
-static void writeVectorF32(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorF32 vectorF32);
-static void writeVectorI16(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorI16 vectorI16);
-static void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType);
-static void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType);
-static void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value);
-static void writeTagWithInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, int value);
-static void writeTagWithFloatValue(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, float value);
 static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset);
 
 // Config Parser Functions
@@ -125,6 +73,10 @@ void extractConfig(char *filename, int gameVersion) {
 		return;
 	}
 	FILE *input = fopen(filename, "rb");
+	if (input == NULL) {
+		perror("COuldn't Open File");
+		return;
+	}
 
 	// Make the output file name
 	char outfileName[512];
@@ -298,17 +250,7 @@ static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYP
 		startTagType(xmlBuddy, TAG_KEYFRAME);
 		addAttrTypeDouble(xmlBuddy, ATTR_TIME, time);
 		addAttrTypeDouble(xmlBuddy, ATTR_VALUE, value);
-		switch(easing) {
-		case CONSTANT:
-			addValStr(xmlBuddy, "CONSTANT");
-			break;
-		case LINEAR:
-			addValStr(xmlBuddy, "LINEAR");
-			break;
-		case EASED:
-			addValStr(xmlBuddy, "EASED");
-			break;
-		}
+		writeAnimEasingVal(xmlBuddy, easing);
 
 		endTag(xmlBuddy);
 	}
@@ -354,21 +296,7 @@ static void copyGoals(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
 		VectorF32 rotation = convertRot16ToF32(rotOriginal);
 		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
 		uint16_t goalType = readShort(input);                          // 0x12     0x2     Goal Type
-		startTagType(xmlBuddy, TAG_TYPE);
-		switch (goalType) {
-		case BLUE:
-			addValStr(xmlBuddy, "blue");
-			break;
-		case GREEN:
-			addValStr(xmlBuddy, "green");
-			break;
-		case RED:
-			addValStr(xmlBuddy, "red");
-			break;
-		}
-		endTag(xmlBuddy); // Goal Type
-
-		endTag(xmlBuddy); // Goal
+		writeGoalType(xmlBuddy, goalType);
 	}
 	fseek(input, savePos, SEEK_SET);
 }
@@ -426,18 +354,7 @@ static void copyBananas(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
 		VectorF32 position = readVectorF32(input);                      // 0x0      0xC    Position (X, Y, Z)
 		writeVectorF32(xmlBuddy, TAG_POSITION, position);
 		uint32_t bananaType = readInt(input);                           // 0xC      0x4    Banana Type
-		startTagType(xmlBuddy, TAG_TYPE);
-		switch (bananaType) {
-		case SINGLE:
-			addValStr(xmlBuddy, "SINGLE");
-			break;
-		case BUNCH:
-			addValStr(xmlBuddy, "BUNCH");
-			break;
-		}
-		endTag(xmlBuddy); // Banana Type
-
-		endTag(xmlBuddy); // Banana
+		writeBananaType(xmlBuddy, bananaType);
 	}
 	fseek(input, savePos, SEEK_SET);
 }
@@ -675,75 +592,6 @@ static int getWormholeIndex(uint32_t offset) {
 	}
 	wormHoleOffsets[wormholeCount] = offset;
 	return wormholeCount++;
-}
-
-static void writeVectorF32(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorF32 vectorF32) {
-	startTagType(xmlBuddy, tagType);
-	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorF32.x);
-	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorF32.y);
-	addAttrTypeDouble(xmlBuddy, ATTR_Z, vectorF32.z);
-	endTag(xmlBuddy);
-}
-
-static void writeVectorI16(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, VectorI16 vectorI16) {
-	startTagType(xmlBuddy, tagType);
-	addAttrTypeDouble(xmlBuddy, ATTR_X, vectorI16.x);
-	addAttrTypeDouble(xmlBuddy, ATTR_Y, vectorI16.y);
-	addAttrTypeDouble(xmlBuddy, ATTR_Z, vectorI16.z);
-	endTag(xmlBuddy);
-}
-
-static void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType) {
-	startTagType(xmlBuddy, TAG_ANIM_SEESAW_TYPE);
-	switch (seesawType) {
-	case LOOPING_ANIMATION:
-		addValStr(xmlBuddy, "LOOPING_ANIMATION");
-		break;
-	case PLAY_ONCE_ANIMATION:
-		addValStr(xmlBuddy, "PLAY_ONCE_ANIMATION");
-		break;
-	case SEESAW:
-		addValStr(xmlBuddy, "SEESAW");
-		break;
-	}
-	endTag(xmlBuddy);
-}
-
-static void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType) {
-	startTagType(xmlBuddy, tagType);
-	switch (switchType) {
-	case PLAY:
-		addValStr(xmlBuddy, "PLAY");
-		break;
-	case PAUSE:
-		addValStr(xmlBuddy, "PAUSE");
-		break;
-	case PLAY_BACWARD:
-		addValStr(xmlBuddy, "PLAY_BACKWARDS");
-		break;
-	case FAST_FORWARD:
-		addValStr(xmlBuddy, "FAST_FORWARD");
-		break;
-	}
-	endTag(xmlBuddy);
-}
-
-static void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value) {
-	startTagType(xmlBuddy, tagType);
-	addValUInt32(xmlBuddy, value);
-	endTag(xmlBuddy);
-}
-
-static void writeTagWithInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, int value) {
-	startTagType(xmlBuddy, tagType);
-	addValInt(xmlBuddy, value);
-	endTag(xmlBuddy);
-}
-
-static void writeTagWithFloatValue(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, float value) {
-	startTagType(xmlBuddy, tagType);
-	addValDouble(xmlBuddy, value);
-	endTag(xmlBuddy);
 }
 
 static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset) {
