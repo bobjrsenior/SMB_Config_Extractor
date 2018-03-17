@@ -1,6 +1,5 @@
 #include "xmlbuddy.h"
 
-#include <stdio.h>
 #include <inttypes.h>
 
 static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType);
