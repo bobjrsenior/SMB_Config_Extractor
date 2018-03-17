@@ -87,6 +87,7 @@ int endTag(XMLBuddy *xmlBuddy) {
 	if (xmlBuddy->state == STATE_OPENING_TAG) {
 		fputs(" />", xmlBuddy->output);
 		xmlBuddy->state = STATE_GENERAL;
+		xmlBuddy->endTagOnNewLine = 1;
 		return NO_ERROR;
 	}
 	else if (xmlBuddy->state != STATE_GENERAL) {
@@ -287,15 +288,16 @@ void writeAnimSeesawType(XMLBuddy *xmlBuddy, uint16_t seesawType) {
 }
 
 void writeAnimEasingVal(XMLBuddy *xmlBuddy, uint32_t easingVal) {
+	
 	switch (easingVal) {
 	case CONSTANT:
-		addValStr(xmlBuddy, "CONSTANT");
+		addAttrTypeStr(xmlBuddy, ATTR_EASING, "CONSTANT");
 		break;
 	case LINEAR:
-		addValStr(xmlBuddy, "LINEAR");
+		addAttrTypeStr(xmlBuddy, ATTR_EASING, "LINEAR");
 		break;
 	case EASED:
-		addValStr(xmlBuddy, "EASED");
+		addAttrTypeStr(xmlBuddy, ATTR_EASING, "EASED");
 		break;
 	}
 }

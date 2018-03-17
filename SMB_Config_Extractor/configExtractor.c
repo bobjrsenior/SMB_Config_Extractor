@@ -386,12 +386,14 @@ static void copyFieldAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t animHea
 	ConfigObject posY = readItem(input);                            // 0x20     0x8    Translation Y Anim Data (Number, offset)
 	ConfigObject posZ = readItem(input);                            // 0x28     0x8    Translation Z Anim Data (Number, offset)
 
+	startTagType(xmlBuddy, TAG_ANIM_KEYFRAMES);
 	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_X, rotX);
 	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_Y, rotY);
 	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_Z, rotZ);
 	copyFieldAnimationType(input, xmlBuddy, TAG_POS_X, posX);
 	copyFieldAnimationType(input, xmlBuddy, TAG_POS_Y, posY);
 	copyFieldAnimationType(input, xmlBuddy, TAG_POS_Z, posZ);
+	endTag(xmlBuddy);
 
 	fseek(input, savePos, SEEK_SET);
 }
