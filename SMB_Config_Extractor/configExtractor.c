@@ -47,6 +47,12 @@ static int getWormholeIndex(uint32_t offset);
 static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset);
 
 // Config Parser Functions
+static void copyStartPositions(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
+static void copyFalloutPlane(FILE *input, XMLBuddy *xmlBuddy, uint32_t offset);
+static void copyBackgroundModels(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
+static void copyBackgroundAnimationOne(FILE *input, XMLBuddy *xmlBuddy, uint32_t animOffset);
+static void copyFog(FILE *input, XMLBuddy *xmlBuddy, uint32_t fogOffset, uint32_t fogAnimOffset);
+static void copyFogAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t fogAnimOffset);
 static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, ConfigObject animData);
 static void copyFieldAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t animHeaderOffset);
@@ -68,8 +74,8 @@ static void copyWormholes(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static uint32_t wormHoleOffsets[MAX_NUM_WORMHOLES] = { 0 };
 static int wormholeCount = 0;
 
-void extractConfig(char *filename, int gameVersion) {
-	if (gameVersion != SMB2 && gameVersion != SMBX) {
+void extractConfig(char *filename, int game) {
+	if (game != SMB2 && game != SMBX) {
 		return;
 	}
 	FILE *input = fopen(filename, "rb");
@@ -94,7 +100,7 @@ void extractConfig(char *filename, int gameVersion) {
 	XMLBuddy *xmlBuddy = initXMLBuddy(&outfileName[0], &xmlBuddyObj, 0);
 
 	// Init read functions (SMB2 is big endian, SMBX is little endian)
-	if (gameVersion == SMB2) {
+	if (game == SMB2) {
 		readInt = &readBigInt;
 		readIntRev = &readLittleInt;
 		readShort = &readBigShort;
@@ -102,7 +108,7 @@ void extractConfig(char *filename, int gameVersion) {
 		readFloat = &readBigFloat;
 		readFloatRev = &readLittleFloat;
 	}
-	else if (gameVersion == SMBX) {
+	else if (game == SMBX) {
 		readInt = &readLittleInt;
 		readIntRev = &readBigInt;
 		readShort = &readLittleShort;
@@ -124,9 +130,19 @@ void extractConfig(char *filename, int gameVersion) {
 	collisionFields = readItem(input);                              // 0x8,    0x8    Collision Header
 	startPositions.offset = readInt(input);                         // 0x10    0x4    Offset to start position
 	uint32_t falloutPlaneOffset = readInt(input);                   // 0x14    0x4    Offset to fallout plane
+	fseek(input, 0x58, SEEK_SET);                                   // 0x0     0x58   Seek to background models (From beginning to avoid seeking errors)
+	ConfigObject backgroundModels = readItem(input);                // 0x58    0x8    Bakground Models number/offset
+	fseek(input, 0xB0, SEEK_SET);                                   // 0x0     0xB0   Seek to fog animation Header (From beginning to avoid seeking errors)
+	uint32_t fogAnimationOffset = readInt(input);                   // 0xB0    0x4    Fog Animation Header Offset
+	fseek(input, 0xBC, SEEK_SET);                                   // 0x0     0xBC   Seek to fog offset (From beginning to avoid seeking errors)
+	uint32_t fogOffset = readInt(input);                            // 0xBC    0x4    Fog offset
 
 	// The number of start positions is the fallout Y offset - startPosition offset / sizeof(startPosition)
 	startPositions.number = (falloutPlaneOffset - startPositions.offset) / 0x14;
+	copyStartPositions(input, xmlBuddy, startPositions);
+	copyFalloutPlane(input, xmlBuddy, falloutPlaneOffset);
+	copyBackgroundModels(input, xmlBuddy, backgroundModels);
+	copyFog(input, xmlBuddy, fogOffset, fogAnimationOffset);
 
 	// Skip most other stuff here for now
 	// A lot of it isn't needed (since it is required in collision fields anyways
@@ -209,6 +225,151 @@ static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject it
 		fseek(input, 0x3C0, SEEK_CUR);                                  // 0xDC     0x3C0  Unknown/Null
 		endTag(xmlBuddy);
 	}
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyStartPositions(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
+	if (item.number == 0 || item.offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, item.offset, SEEK_SET);
+
+	for (uint32_t i = 0; i < item.number; i++) {
+		startTagType(xmlBuddy, TAG_START);
+		//                                                                 Offset   Size   Description
+		VectorF32 position = readVectorF32(input);                      // 0x0      0xC    Position (X, Y, Z)
+		writeVectorF32(xmlBuddy, TAG_POSITION, position);
+		VectorI16 rotOriginal = readVectorI16(input, 1);                // 0xC      0x8    Rotation (X, Y, Z, Pad)
+		VectorF32 rotation = convertRot16ToF32(rotOriginal);
+		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
+
+		endTag(xmlBuddy);
+	}
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyFalloutPlane(FILE *input, XMLBuddy *xmlBuddy, uint32_t offset) {
+	if (offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, offset, SEEK_SET);
+	//                                                                 Offset   Size   Description
+	float falloutPlane = readFloat(input);                          // 0x0      0x4    Fallout Y position
+	startTagType(xmlBuddy, TAG_FALLOUT_PLANE);
+	addAttrTypeDouble(xmlBuddy, ATTR_Y, falloutPlane);
+	endTag(xmlBuddy);
+
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyBackgroundModels(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
+	if (item.number == 0 || item.offset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, item.offset, SEEK_SET);
+
+	for (uint32_t i = 0; i < item.number; i++) {
+		startTagType(xmlBuddy, TAG_BACKGROUND_MODEL);
+		//                                                                 Offset   Size   Description
+		fseek(input, 0x4, SEEK_CUR);                                    // 0x0      0x4    0x0000001F
+		uint32_t asciiNameOffset = readInt(input);                      // 0x4      0x4    Offset to model name
+		startTagType(xmlBuddy, TAG_NAME);
+		writeAsciiName(input, xmlBuddy, asciiNameOffset);
+		endTag(xmlBuddy);
+		fseek(input, 0x4, SEEK_CUR);                                    // 0x8      0x4    Null
+		VectorF32 position = readVectorF32(input);                      // 0xC      0xC    Position (X, Y, Z)
+		writeVectorF32(xmlBuddy, TAG_POSITION, position);
+		VectorI16 rotOriginal = readVectorI16(input, 1);                // 0x18      0x8    Rotation (X, Y, Z, Pad)
+		VectorF32 rotation = convertRot16ToF32(rotOriginal);
+		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
+		VectorF32 scale = readVectorF32(input);                         // 0x20    0xC     Scale (X, Y, Z)
+		writeVectorF32(xmlBuddy, TAG_SCALE, scale);
+		uint32_t animOneOffset = readInt(input);                        // 0x2C    0x4     Offset to the first background animation header
+		copyBackgroundAnimationOne(input, xmlBuddy, animOneOffset);
+		uint32_t animTwoOffset = readInt(input);                        // 0x30    0x4     Offset to the second background animation header
+		uint32_t effectHeader = readInt(input);                         // 0x34    0x4     Offset to effect header
+		endTag(xmlBuddy);
+	}
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyBackgroundAnimationOne(FILE *input, XMLBuddy *xmlBuddy, uint32_t animOffset) {
+	if (animOffset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, animOffset, SEEK_SET);
+
+	//                                                                 Offset   Size   Description
+	fseek(input, 0x4, SEEK_CUR);                                    // 0x0      0x4    Unknown/Null
+	float animLoopPoint = readFloat(input);                      // 0x4      0x4    Animation loop point
+	writeTagWithFloatValue(xmlBuddy, TAG_ANIM_LOOP_TIME, animLoopPoint);
+	fseek(input, 0x8, SEEK_CUR);                                    // 0x8      0x8    Unknown/Null
+
+	ConfigObject rotX = readItem(input);                            // 0x10     0x8    Rotation X Anim Data (Number, offset)
+	ConfigObject rotY = readItem(input);                            // 0x18     0x8    Rotation Y Anim Data (Number, offset)
+	ConfigObject rotZ = readItem(input);                            // 0x20     0x8    Rotation Z Anim Data (Number, offset)
+	ConfigObject posX = readItem(input);                            // 0x28     0x8    Translation X Anim Data (Number, offset)
+	ConfigObject posY = readItem(input);                            // 0x30     0x8    Translation Y Anim Data (Number, offset)
+	ConfigObject posZ = readItem(input);                            // 0x38     0x8    Translation Z Anim Data (Number, offset)
+	fseek(input, 0x10, SEEK_CUR);                                   // 0x40     0x10   Unknown/Null
+
+	startTagType(xmlBuddy, TAG_ANIM_KEYFRAMES);
+	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_X, rotX);
+	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_Y, rotY);
+	copyFieldAnimationType(input, xmlBuddy, TAG_ROT_Z, rotZ);
+	copyFieldAnimationType(input, xmlBuddy, TAG_POS_X, posX);
+	copyFieldAnimationType(input, xmlBuddy, TAG_POS_Y, posY);
+	copyFieldAnimationType(input, xmlBuddy, TAG_POS_Z, posZ);
+	endTag(xmlBuddy);
+
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyFog(FILE *input, XMLBuddy *xmlBuddy, uint32_t fogOffset, uint32_t fogAnimOffset) {
+	if (fogOffset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, fogOffset, SEEK_SET);
+
+	// Deal with main fog header first
+	startTagType(xmlBuddy, TAG_FOG);
+	//                                                                 Offset   Size   Description
+	uint8_t fogType = (uint8_t)fgetc(input);                        // 0x0      0x1    Fog Type
+	writeFogType(xmlBuddy, fogType);
+	fseek(input, 0x3, SEEK_CUR);                                    // 0x1      0x3    Null
+	float fogStart = readFloat(input);                              // 0x4      0x4    Fog start distance
+	writeTagWithFloatValue(xmlBuddy, TAG_START, fogStart);
+	float fogEnd = readFloat(input);                                // 0x8      0x4    Fog end distance
+	writeTagWithFloatValue(xmlBuddy, TAG_END, fogEnd);
+	float red = readFloat(input);                                   // 0xC      0x4    Amount of Red
+	writeTagWithFloatValue(xmlBuddy, TAG_RED, red);
+	float green = readFloat(input);                                 // 0x10     0x4    Amount of Green
+	writeTagWithFloatValue(xmlBuddy, TAG_GREEN, green);
+	float blue = readFloat(input);                                  // 0x14     0x4    Amount of Blue
+	writeTagWithFloatValue(xmlBuddy, TAG_BLUE, blue);
+	fseek(input, 0xC, SEEK_CUR);                                    // 0x18     0xC    Unknown/Null
+	copyFogAnimation(input, xmlBuddy, fogAnimOffset);
+
+	endTag(xmlBuddy);
+	fseek(input, savePos, SEEK_SET);
+}
+
+static void copyFogAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t fogAnimOffset) {
+	if (fogAnimOffset == 0) return;
+	long savePos = ftell(input);
+	fseek(input, fogAnimOffset, SEEK_SET);
+
+	//                                                                 Offset   Size   Description
+	ConfigObject startDist = readItem(input);                       // 0x0      0x8    Start Distance Anim Data (Number, offset)
+	ConfigObject endDist = readItem(input);                         // 0x8      0x8    End Distance Anim Data (Number, offset)
+	ConfigObject red = readItem(input);                             // 0x10     0x8    Red Anim Data (Number, offset)
+	ConfigObject green = readItem(input);                           // 0x18     0x8    Green Anim Data (Number, offset)
+	ConfigObject blue = readItem(input);                            // 0x20     0x8    Blue Anim Data (Number, offset)
+	fseek(input, 0x8, SEEK_CUR);                                    // 0x28     0x8    Unknown Anim Data (Number, offset)
+
+	startTagType(xmlBuddy, TAG_ANIM_KEYFRAMES);
+	copyFieldAnimationType(input, xmlBuddy, TAG_START, startDist);
+	copyFieldAnimationType(input, xmlBuddy, TAG_END, endDist);
+	copyFieldAnimationType(input, xmlBuddy, TAG_RED, red);
+	copyFieldAnimationType(input, xmlBuddy, TAG_GREEN, green);
+	copyFieldAnimationType(input, xmlBuddy, TAG_BLUE, blue);
+	endTag(xmlBuddy);
+
 	fseek(input, savePos, SEEK_SET);
 }
 

@@ -8,11 +8,16 @@ enum TAG_TYPE {
 	TAG_TITLE,
 	TAG_MODEL_IMPORT,
 	TAG_START,
+	TAG_END,
 	TAG_NAME,
 	TAG_POSITION,
 	TAG_ROTATION,
 	TAG_SCALE,
 	TAG_BACKGROUND_MODEL,
+	TAG_FOG,
+	TAG_RED,
+	TAG_GREEN,
+	TAG_BLUE,
 	TAG_FALLOUT_PLANE,
 	TAG_ITEM_GROUP,
 	TAG_ROTATION_CENTER,
@@ -91,6 +96,15 @@ enum BANANA_TYPE {
 	BUNCH = 0x00000001
 };
 
+enum FOG_TYPE {
+	GX_FOG_NONE = 0x00,
+	GX_FOG_LIN = 0x02,
+	GX_FOG_EXP = 0x04,
+	GX_FOG_EXP2 = 0x05,
+	GX_FOG_REVEXP = 0x06,
+	GX_FOG_REVEXP2 = 0x07,
+};
+
 enum EASING {
 	CONSTANT = 0x00000000,
 	LINEAR = 0x00000001,
@@ -161,6 +175,7 @@ int addValDouble(XMLBuddy *xmlBuddy, double value);
 
 void writeGoalType(XMLBuddy *xmlBuddy, uint16_t goalType);
 void writeBananaType(XMLBuddy *xmlBuddy, uint32_t bananaType);
+void writeFogType(XMLBuddy *xmlBuddy, uint8_t fogType);
 void writeAnimType(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint16_t switchType);
 void writeAnimEasingVal(XMLBuddy *xmlBuddy, uint32_t easingVal);
 void writeTagWithUInt32Value(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, uint32_t value);

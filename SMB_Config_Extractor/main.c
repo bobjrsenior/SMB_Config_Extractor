@@ -9,22 +9,6 @@
 #include "FunctionsAndDefines.h"
 #include "configExtractor.h"
 
-inline uint32_t readInt(FILE* file) {
-	uint32_t c1 = getc(file) << 24;
-	uint32_t c2 = getc(file) << 16;
-	uint32_t c3 = getc(file) << 8;
-	uint32_t c4 = getc(file);
-	return (c1 | c2 | c3 | c4);
-}
-
-inline uint16_t readShort(FILE* file) {
-	uint32_t c1 = getc(file) << 8;
-	uint32_t c2 = getc(file);
-	return (uint16_t) (c1 | c2);
-}
-#define SMB1 0
-#define SMB2 1
-
 typedef struct {
 	int number;
 	int offset;
@@ -62,7 +46,7 @@ inline uint32_t readBigInt(FILE* file) {
 }
 */
 
-float readRot(FILE* file) {
+static float readRot(FILE* file) {
 	char rotStr[3];
 	fscanf(file, "%c%c", (rotStr + 1), (rotStr + 0));
 	float angle = (float)*((unsigned short*)rotStr);
@@ -70,9 +54,27 @@ float readRot(FILE* file) {
 	return angle;
 }
 
-int decompress(char* filename);
+#define NUM_SMB1_MARKERS 22
+#define NUM_SMB2_MARKERS 24
+#define NUM_SMBX_MARKERS 35
 
-int insert(AnimFrame frameTimes[], int count, float value) {
+static uint32_t SMB1Markers[NUM_SMB1_MARKERS] = { 0x00000064, 0x00000078, 0x0000000a, 0x0000000f, 0x00000005, 0x00000008, 0x0000000e, 0x00000019, 0x00000014, 0x0000001e, 0x0000003c, 0x0000001b, 0x00000002, 0x00000006, 0x00000004, 0x0000001f, 0x00000012, 0x0000001a, 0x00000028, 0x000001e0, 0x000000f0, 0x000000c8 };
+static uint32_t SMB2Markers[NUM_SMB2_MARKERS] = { 0x42c80000, 0x447a0000, 0x41f00000, 0x42700000, 0x41200000, 0x45bb8000, 0x453b8000, 0x438c0000, 0x43f00000, 0x42a00000, 0x42200000, 0x44fa0000, 0x41a00000, 0x44e10000, 0x40000000, 0x40400000, 0x43200000, 0x43520000, 0x42480000, 0x43700000, 0x44760000, 0x43dc0000, 0x442f0000, 0x43480000 };
+static uint32_t SMBXMarkers[NUM_SMBX_MARKERS] = { 0x0000c842, 0x00007a44, 0x0000f041, 0x00007042, 0x00002041, 0x0080bb45, 0x00803b45, 0x00008c43, 0x0000f043, 0x0000a042, 0x00002042, 0x00004843, 0x0000fa44, 0x0000a041, 0x0000e144, 0x00000040, 0x00004040, 0x00002043, 0x00005243, 0x00004842, 0x00007043, 0x00007644, 0x0000dc43, 0x00002f44, 0x0000c040, 0x0000f042, 0x0000a040, 0x00000041, 0x0000c841, 0x0000d841, 0x00008040, 0x0000f841, 0x00009041, 0x00000042, 0x00007041 };
+
+// File Reading Functions (Endianness handling)
+static uint32_t(*readInt)(FILE*);
+static uint32_t(*readIntRev)(FILE*);
+static uint16_t(*readShort)(FILE*);
+static uint16_t(*readShortRev)(FILE*);
+static float(*readFloat)(FILE*);
+static float(*readFloatRev)(FILE*);
+
+static int decompress(const char* filename);
+static int determineGame(const char *filename);
+static void extractConfigOld(char* filename, int game);
+
+static int insert(AnimFrame frameTimes[], int count, float value) {
 
 	int position = -1;
 	for (int i = 0; i < count; ++i) {
@@ -95,12 +97,43 @@ int insert(AnimFrame frameTimes[], int count, float value) {
 	return 1;
 }
 
+static void printHelp() {
+	puts("Usage: ./SMB_LZ_Tool [(FLAG | FILE)...]");
+	puts("Flags:");
+	puts("    -help      Show this help");
+	puts("    -h");
+	puts("");
+	puts("    -legacy    Use the old config extractor for smbcnv style configs");
+	puts("    -l");
+	puts("");
+	puts("    -new       Use the new config extractor for xml style configs (default)");
+	puts("    -n");
+	puts("");
+
+}
+
 int main(int argc, char* argv[]) {
 	if (argc <= 1) {
 		printf("Add level paths as command line params");
 	}
 
+	int legacyExtractor = 0;
+
 	for (int i = 1; i < argc; ++i) {
+		// Check for Command Line flags
+		if (strcmp(argv[i], "-legacy") == 0 || strcmp(argv[i], "-l") == 0) {
+			legacyExtractor = 1;
+			continue;
+		}
+		else if (strcmp(argv[i], "-new") == 0 || strcmp(argv[i], "-n") == 0) {
+			legacyExtractor = 0;
+			continue;
+		}
+		else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
+			printHelp();
+			continue;
+		}
+
 		char filename[512];
 		int decomp = 0;
 		int filelength = (int) strlen(argv[i]);
@@ -122,7 +155,17 @@ int main(int argc, char* argv[]) {
 				printf("Failed to decompress %s\nSkipping\n", filename);
 			}
 		}
-		extractConfig(filename, SMB2);
+		int game = determineGame(filename);
+		if (game == -1) {
+			printf("Unknown Game Marker for '%s'.\nContact Bobjrsenior", filename);
+			continue;
+		}
+		if (game == SMB1 || legacyExtractor) {
+			extractConfigOld(filename, game);
+		}
+		else {
+			extractConfig(filename, game);
+		}
 	}
 
 
@@ -130,7 +173,41 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-void extractConfig2(char* filename) {
+static int determineGame(const char *filename) {
+	FILE *input = fopen(filename, "rb");
+	if (input == NULL) {
+		perror("Failed to check game version");
+		return -1;
+	}
+	fseek(input, 0x4, SEEK_SET);
+	uint32_t gameCheck = readBigInt(input);
+	fclose(input);
+
+	// Check SMB 1
+	for (int i = 0; i < NUM_SMB1_MARKERS; i++) {
+		if (gameCheck == SMB1Markers[i]) {
+			return SMB1;
+		}
+	}
+
+	// Check SMB 2
+	for (int i = 0; i < NUM_SMB2_MARKERS; i++) {
+		if (gameCheck == SMB2Markers[i]) {
+			return SMB2;
+		}
+	}
+
+	// Check SMB Deluxe
+	for (int i = 0; i < NUM_SMBX_MARKERS; i++) {
+		if (gameCheck == SMBXMarkers[i]) {
+			return SMBX;
+		}
+	}
+
+	return -1;
+}
+
+static void extractConfigOld(char* filename, int game) {
 	FILE* lz = fopen(filename, "rb");
 	if (lz == NULL) {
 		printf("ERROR: %s not found\n", filename);
@@ -146,27 +223,32 @@ void extractConfig2(char* filename) {
 	ConfigObject bananas;
 	ConfigObject backgrounds;
 
-	int game = SMB1;
+	// Init read functions (SMB1/2 is big endian, SMBX is little endian)
+	if (game == SMB1 || game == SMB2) {
+		readInt = &readBigInt;
+		readIntRev = &readLittleInt;
+		readShort = &readBigShort;
+		readShortRev = &readLittleShort;
+		readFloat = &readBigFloat;
+		readFloatRev = &readLittleFloat;
+	}
+	else if (game == SMBX) {
+		readInt = &readLittleInt;
+		readIntRev = &readBigInt;
+		readShort = &readLittleShort;
+		readShortRev = &readBigShort;
+		readFloat = &readLittleFloat;
+		readFloat = &readBigFloat;
+	}
 
-	fseek(lz, 4, SEEK_SET);
 
-	int gameCheck = readInt(lz);
-	if (gameCheck == 0x64 || gameCheck == 0x78 || gameCheck == 0x0000001A) {
-		game = SMB1;
-	}
-	else if (gameCheck == 0x447A0000 || gameCheck == 0x44E10000 || gameCheck == 0x42C80000) {
-		game = SMB2;
-	}
-	else {
-		printf("Unsupported or Unrecognized SMB Game: %s\n\nAssuming game is SMB1\nPlease report this level to bobjrsenior\n", filename);
-		game = SMB1;
-	}
+	fseek(lz, 8, SEEK_SET);
 
 	if (game == SMB1) {
 		collisionFields.number = readInt(lz);
 		collisionFields.offset = readInt(lz);
 	}
-	else if (game == SMB2) {
+	else {
 		fseek(lz, 8, SEEK_CUR);
 	}
 	startPositions.offset = readInt(lz);
@@ -195,7 +277,7 @@ void extractConfig2(char* filename) {
 	if (game == SMB1) {
 		fseek(lz, 104, SEEK_SET);
 	}
-	else if (game == SMB2) {
+	else {
 		fseek(lz, 88, SEEK_SET);
 	}
 
@@ -268,7 +350,7 @@ void extractConfig2(char* filename) {
 				type = 'R';
 			}
 		}
-		else if (game == SMB2) {
+		else {
 			if (shortType == 0x0001) {
 				type = 'B';
 			}
@@ -749,7 +831,7 @@ void extractConfig2(char* filename) {
 	fclose(outfile);
 }
 
-int decompress(char* filename) {
+int decompress(const char* filename) {
 	// Try to open it
 	FILE* lz = fopen(filename, "rb");
 	if (lz == NULL) {
@@ -762,7 +844,7 @@ int decompress(char* filename) {
 	FILE* normal = tmpfile();
 
 	// Unfix the header (Turn it back into normal FF7 LZSS)
-	uint32_t csize = readBigInt(lz) - 8;
+	uint32_t csize = readLittleInt(lz) - 8;
 	fseek(lz, 4, SEEK_CUR);
 	putc(csize & 0xFF, normal);
 	putc((csize >> 8) & 0xFF, normal);
@@ -795,7 +877,7 @@ int decompress(char* filename) {
 
 
 	// The size the the lzss data + 4 bytes for the header
-	uint32_t filesize = readBigInt(normal) + 4;
+	uint32_t filesize = readLittleInt(normal) + 4;
 	printf("FILESIZE: %d\n", filesize);
 	int lastPercentDone = -1;
 
@@ -822,7 +904,7 @@ int decompress(char* filename) {
 				putc(getc(normal), outfile);
 			}// Reference
 			else {
-				uint16_t reference = readShort(normal);
+				uint16_t reference = readBigShort(normal);
 
 				// Length is the last four bits + 3
 				// Any less than a lengh of 3 i pointess since a reference takes up 3 bytes
@@ -875,13 +957,10 @@ int decompress(char* filename) {
 					--length;
 				}
 
-
-
 			}
 			// Go to the next reference bit in the block
 			block = block >> 1;
 		}
-
 
 	}
 

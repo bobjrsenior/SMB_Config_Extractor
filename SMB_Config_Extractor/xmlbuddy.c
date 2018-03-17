@@ -328,6 +328,31 @@ void writeBananaType(XMLBuddy *xmlBuddy, uint32_t bananaType) {
 	endTag(xmlBuddy);
 }
 
+void writeFogType(XMLBuddy *xmlBuddy, uint8_t fogType) {
+	startTagType(xmlBuddy, TAG_TYPE);
+	switch (fogType) {
+	case GX_FOG_NONE:
+		addValStr(xmlBuddy, "GX_FOG_NONE");
+		break;
+	case GX_FOG_LIN:
+		addValStr(xmlBuddy, "GX_FOG_LIN");
+		break;
+	case GX_FOG_EXP:
+		addValStr(xmlBuddy, "GX_FOG_EXP");
+		break;
+	case GX_FOG_EXP2:
+		addValStr(xmlBuddy, "GX_FOG_EXP2");
+		break;
+	case GX_FOG_REVEXP:
+		addValStr(xmlBuddy, "GX_FOG_REVEXP");
+		break;
+	case GX_FOG_REVEXP2:
+		addValStr(xmlBuddy, "GX_FOG_REVEXP2");
+		break;
+	}
+	endTag(xmlBuddy);
+}
+
 static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 	switch (tagType) {
 	case TAG_TITLE:
@@ -338,6 +363,9 @@ static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 		break;
 	case TAG_START:
 		fputs("start", xmlBuddy->output);
+		break;
+	case TAG_END:
+		fputs("end", xmlBuddy->output);
 		break;
 	case TAG_NAME:
 		fputs("name", xmlBuddy->output);
@@ -353,6 +381,18 @@ static int printTagName(XMLBuddy *xmlBuddy, enum TAG_TYPE tagType) {
 		break;
 	case TAG_BACKGROUND_MODEL:
 		fputs("backgroundModel", xmlBuddy->output);
+		break;
+	case TAG_FOG:
+		fputs("fog", xmlBuddy->output);
+		break;
+	case TAG_RED:
+		fputs("red", xmlBuddy->output);
+		break;
+	case TAG_GREEN:
+		fputs("green", xmlBuddy->output);
+		break;
+	case TAG_BLUE:
+		fputs("blue", xmlBuddy->output);
 		break;
 	case TAG_FALLOUT_PLANE:
 		fputs("falloutPlane", xmlBuddy->output);
