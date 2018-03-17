@@ -99,6 +99,8 @@ int endTag(XMLBuddy *xmlBuddy) {
 	xmlBuddy->indentation--;
 	if (xmlBuddy->endTagOnNewLine) {
 		handleIndentation(xmlBuddy);
+	}
+	else {
 		xmlBuddy->endTagOnNewLine = 1;
 	}
 

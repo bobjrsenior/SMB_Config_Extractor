@@ -458,6 +458,7 @@ static void copyGoals(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
 		writeVectorF32(xmlBuddy, TAG_ROTATION, rotation);
 		uint16_t goalType = readShort(input);                          // 0x12     0x2     Goal Type
 		writeGoalType(xmlBuddy, goalType);
+		endTag(xmlBuddy);
 	}
 	fseek(input, savePos, SEEK_SET);
 }
@@ -516,6 +517,7 @@ static void copyBananas(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item) {
 		writeVectorF32(xmlBuddy, TAG_POSITION, position);
 		uint32_t bananaType = readInt(input);                           // 0xC      0x4    Banana Type
 		writeBananaType(xmlBuddy, bananaType);
+		endTag(xmlBuddy);
 	}
 	fseek(input, savePos, SEEK_SET);
 }
