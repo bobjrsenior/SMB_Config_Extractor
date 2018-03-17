@@ -137,10 +137,21 @@ int main(int argc, char* argv[]) {
 		char filename[512];
 		int decomp = 0;
 		int filelength = (int) strlen(argv[i]);
+		if (filelength < 4) {
+			printf("Filename too short: %s\n", argv[i]);
+			continue;
+		}
 		sscanf(argv[i], "%507s", filename);
-		if (filename[filelength - 1] == 'z') {
+		// If lz file
+		if (filename[filelength - 2] == 'l' && filename[filelength - 1] == 'z') {
 			printf("Decompressing\n");
 			decomp = 1;
+		}// If not raw file
+		else if (!(filename[filelength - 2] == 'l' && filename[filelength - 1] == 'z' && filename[filelength - 1] == 'z')) {
+			// TODO If wanted
+			//printf("Warning, this may not be a raw LZ file. Please make sure you didn't drop the wrong file.");
+			//printf("File in Question: %s\n", argv[i]);
+			//continue;
 		}
 
 		if (decomp) {
