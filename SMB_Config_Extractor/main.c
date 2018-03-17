@@ -12,7 +12,7 @@
 typedef struct {
 	int number;
 	int offset;
-}ConfigObject;
+}ConfigObjectOld;
 
 typedef struct {
 	float time;
@@ -23,28 +23,6 @@ typedef struct {
 	float yRot;
 	float zRot;
 }AnimFrame;
-
-/* TODO: Fix the endiannes issue in this file
-float readBigFloat(FILE* file) {
-	char floatStr[5];
-	fscanf(file, "%c%c%c%c", (floatStr + 3), (floatStr + 2), (floatStr + 1), (floatStr + 0));
-	return *((float*)floatStr);
-}
-
-inline uint16_t readBigShort(FILE* file) {
-	char rotStr[3];
-	fscanf(file, "%c%c", (rotStr + 1), (rotStr + 0));
-	return *((uint16_t*)rotStr);
-}
-
-inline uint32_t readBigInt(FILE* file) {
-	uint32_t c1 = getc(file);
-	uint32_t c2 = getc(file) << 8;
-	uint32_t c3 = getc(file) << 16;
-	uint32_t c4 = getc(file) << 24;
-	return (c1 | c2 | c3 | c4);
-}
-*/
 
 static float readRot(FILE* file) {
 	char rotStr[3];
@@ -225,14 +203,14 @@ static void extractConfigOld(char* filename, int game) {
 		return;
 	}
 
-	ConfigObject collisionFields;
-	ConfigObject startPositions;
-	ConfigObject falloutY;
-	ConfigObject goals;
-	ConfigObject bumpers;
-	ConfigObject jamabars;
-	ConfigObject bananas;
-	ConfigObject backgrounds;
+	ConfigObjectOld collisionFields;
+	ConfigObjectOld startPositions;
+	ConfigObjectOld falloutY;
+	ConfigObjectOld goals;
+	ConfigObjectOld bumpers;
+	ConfigObjectOld jamabars;
+	ConfigObjectOld bananas;
+	ConfigObjectOld backgrounds;
 
 	// Init read functions (SMB1/2 is big endian, SMBX is little endian)
 	if (game == SMB1 || game == SMB2) {
