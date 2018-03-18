@@ -1013,9 +1013,9 @@ static Mat3 makeRotationMatrixX(float degrees) {
 	float cosine = (float)cos(radians);
 	float sine = (float)sin(radians);
 
-	Mat3 matrix = { 1.0f,      0.0f,       0.0f,
-		            0.0f,    cosine,     -sine,
-		            0.0f,     sine,      cosine };
+	Mat3 matrix = { {1.0f,      0.0f,       0.0f},
+	{0.0f,    cosine,     -sine},
+	{0.0f,     sine,      cosine} };
 	return matrix;
 }
 
@@ -1024,9 +1024,9 @@ static Mat3 makeRotationMatrixY(float degrees) {
 	float cosine = (float)cos(radians);
 	float sine = (float)sin(radians);
 
-	Mat3 matrix = { cosine,      0.0f,     sine,
-		              0.0f,      1.0f,     0.0f,
-		             -sine,      0.0f,    cosine };
+	Mat3 matrix = { {cosine,      0.0f,     sine},
+	{0.0f,      1.0f,     0.0f},
+	{-sine,      0.0f,    cosine} };
 	return matrix;
 }
 
@@ -1035,9 +1035,9 @@ static Mat3 makeRotationMatrixZ(float degrees) {
 	float cosine = (float)cos(radians);
 	float sine = (float)sin(radians);
 
-	Mat3 matrix = { cosine,      -sine,      0.0f,
-		             sine,       cosine,     0.0f,
-		             0.0f,         0.0f,     1.0f };
+	Mat3 matrix = { {cosine,      -sine,      0.0f},
+	{sine,       cosine,     0.0f},
+	{0.0f,         0.0f,     1.0f} };
 	return matrix;
 }
 
