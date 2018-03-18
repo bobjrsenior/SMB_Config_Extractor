@@ -167,7 +167,7 @@ void extractConfig(char *filename, int game, int extractCollisionEnabled) {
 		readShort = &readLittleShort;
 		readShortRev = &readBigShort;
 		readFloat = &readLittleFloat;
-		readFloat = &readBigFloat;
+		readFloatRev = &readBigFloat;
 	}
 
 	ConfigObject collisionFields;
