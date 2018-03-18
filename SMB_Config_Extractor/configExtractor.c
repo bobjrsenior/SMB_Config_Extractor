@@ -67,7 +67,7 @@ static int getWormholeIndex(uint32_t offset);
 // Obj Helper Functions
 static uint16_t calculateNumTriangles(FILE *input, CollisionGroupHeader colGroupHeader);
 static void initObjoutput();
-static void writeObjOutput(FILE *input, CollisionGroupHeader colGroupHeader, uint16_t numTris);
+static void writeObjOutput(FILE *input, CollisionGroupHeader colGroupHeader, uint16_t numTris, int itemGroupNum);
 static void writeTriVertex(VectorF32 vertex);
 static void writeTriNormal(VectorF32 normal);
 static void writeLastTriFace();
@@ -85,7 +85,7 @@ static void copyFogAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t fogAnimOf
 static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYPE tagType, ConfigObject animData);
 static void copyFieldAnimation(FILE *input, XMLBuddy *xmlBuddy, uint32_t animHeaderOffset);
-static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHeader item);
+static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHeader item, int itemGroupNum);
 static void copyGoals(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyBumpers(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
 static void copyJamabars(FILE *input, XMLBuddy *xmlBuddy, ConfigObject item);
@@ -107,33 +107,38 @@ static uint32_t curNormalCount = 1;
 
 // Matrix functions
 #define PI_F 3.141592653589793238462f
-
 static float degreeToRadian(float degrees);
-
 static Mat3 makeRotationMatrixX(float degrees);
 static Mat3 makeRotationMatrixY(float degrees);
 static Mat3 makeRotationMatrixZ(float degrees);
-
 static VectorF32 multiplyMat3ByVec3(Mat3 matrix, VectorF32 vector);
 
-static char objFilename[255] = { 0 };
+static int extractCollision = 0;
+static const char *lzFilename = NULL;
 static FILE *objOutput = NULL;
 
-void extractConfig(char *filename, int game) {
+void extractConfig(char *filename, int game, int extractCollisionEnabled) {
 	if (game != SMB2 && game != SMBX) {
 		return;
 	}
 	FILE *input = fopen(filename, "rb");
 	if (input == NULL) {
-		perror("COuldn't Open File");
+		perror("Couldn't Open File");
 		return;
 	}
+	lzFilename = filename;
+
+	extractCollision = extractCollisionEnabled;
 
 	// Make the output file name
+	int nameLength = (int)strlen(filename);
+	if (nameLength > 507) {
+		nameLength = 507;
+	}
 	char outfileName[512];
-	sscanf(filename, "%507s", outfileName);
+	strncpy(outfileName, filename, nameLength);
 	{
-		int nameLength = (int)strlen(outfileName);
+		
 		outfileName[nameLength++] = '.';
 		outfileName[nameLength++] = 'x';
 		outfileName[nameLength++] = 'm';
@@ -229,7 +234,7 @@ static void copyCollisionFields(FILE *input, XMLBuddy *xmlBuddy, ConfigObject it
 		VectorF32 conveyorSpeed = readVectorF32(input);                 // 0x18     0xC    Conveyor Speed (X, Y, Z)
 		writeVectorF32(xmlBuddy, TAG_CONVEYOR_SPEED, conveyorSpeed);
 		colGroupHeader = readCollisionGroupHeader(input);               // 0x24     0x20   Collision Group Data
-		copyCollisionGroup(input, xmlBuddy, colGroupHeader);
+		copyCollisionGroup(input, xmlBuddy, colGroupHeader, i);
 		ConfigObject goals = readItem(input);                           // 0x44     0x8    Goal number/offset
 		copyGoals(input, xmlBuddy, goals);
 		ConfigObject bumpers = readItem(input);                         // 0x4C     0x8    Bumper number/offset
@@ -474,7 +479,7 @@ static void copyFieldAnimationType(FILE *input, XMLBuddy *xmlBuddy, enum TAG_TYP
 	fseek(input, savePos, SEEK_SET);
 }
 
-static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHeader item) {
+static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHeader item, int itemGroupNum) {
 	// TODO Possibly look at collision data
 	// and move this into separate write function)
 	startTagType(xmlBuddy, TAG_COLLISION_GRID);
@@ -502,7 +507,7 @@ static void copyCollisionGroup(FILE *input, XMLBuddy *xmlBuddy, CollisionGroupHe
 			initObjoutput();
 		}
 		if (objOutput != NULL) {
-			writeObjOutput(input, item, numTris);
+			writeObjOutput(input, item, numTris, itemGroupNum);
 		}
 	}
 }
@@ -838,8 +843,8 @@ static uint16_t calculateNumTriangles(FILE *input, CollisionGroupHeader colGroup
 
 			uint16_t triIndex = readShort(input);
 			while (triIndex != 0xFFFF) {
-				if (triIndex > maxIndex) {
-					maxIndex = triIndex;
+				if (triIndex + 1 > maxIndex) {
+					maxIndex = triIndex + 1;
 				}
 				triIndex = readShort(input);
 			}
@@ -871,18 +876,34 @@ static void writeAsciiName(FILE *input, XMLBuddy *xmlBuddy, uint32_t nameOffset)
 }
 
 static void initObjoutput() {
-	objOutput = fopen("test.obj", "w");
+	if (!extractCollision) return;
+	// Make the output file name
+	int nameLength = (int)strlen(lzFilename);
+	if (nameLength > 507) {
+		nameLength = 507;
+	}
+	char objfileName[512];
+	strncpy(objfileName, lzFilename, nameLength);
+	{
+
+		objfileName[nameLength++] = '.';
+		objfileName[nameLength++] = 'o';
+		objfileName[nameLength++] = 'b';
+		objfileName[nameLength++] = 'j';
+		objfileName[nameLength++] = '\0';
+	}
+	objOutput = fopen(objfileName, "w");
 	if (objOutput == NULL) {
 		perror("Failed to initialize obj output file");
 	}
 }
 
-static void writeObjOutput(FILE *input, CollisionGroupHeader colGroupHeader, uint16_t numTris) {
+static void writeObjOutput(FILE *input, CollisionGroupHeader colGroupHeader, uint16_t numTris, int itemGroupNum) {
 	if (colGroupHeader.triangleListOffset == 0 || numTris == 0) return;
 	long savePos = ftell(input);
 	fseek(input, colGroupHeader.triangleListOffset, SEEK_SET);
 	// Write out object name (base don tri count for now
-	fprintf(objOutput, "o %d\n", curVertexCount);
+	fprintf(objOutput, "o Item_Group_%d\n", itemGroupNum);
 
 	Mat3 *pastTris = malloc(numTris * sizeof(Mat3));
 	
@@ -965,6 +986,7 @@ static void writeObjOutput(FILE *input, CollisionGroupHeader colGroupHeader, uin
 		fflush(objOutput);
 	}
 
+	free(pastTris);
 	fseek(input, savePos, SEEK_SET);
 }
 

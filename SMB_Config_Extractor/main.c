@@ -78,16 +78,21 @@ static int insert(AnimFrame frameTimes[], int count, float value) {
 static void printHelp() {
 	puts("Usage: ./SMB_LZ_Tool [(FLAG | FILE)...]");
 	puts("Flags:");
-	puts("    -help      Show this help");
+	puts("    -help        Show this help");
 	puts("    -h");
 	puts("");
-	puts("    -legacy    Use the old config extractor for smbcnv style configs");
+	puts("    -legacy      Use the old config extractor for smbcnv style configs");
 	puts("    -l");
 	puts("");
-	puts("    -new       Use the new config extractor for xml style configs (default)");
+	puts("    -new         Use the new config extractor for xml style configs (default)");
 	puts("    -n");
 	puts("");
-
+	puts("    -collision   Extract collision from the LZ files (only supported in XML configs)");
+	puts("    -c");
+	puts("");
+	puts("    -nocollision Don't extract collision (default)");
+	puts("    -nc");
+	puts("");
 }
 
 int main(int argc, char* argv[]) {
@@ -96,6 +101,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	int legacyExtractor = 0;
+	int extractCollision = 0;
 
 	for (int i = 1; i < argc; ++i) {
 		// Check for Command Line flags
@@ -105,6 +111,14 @@ int main(int argc, char* argv[]) {
 		}
 		else if (strcmp(argv[i], "-new") == 0 || strcmp(argv[i], "-n") == 0) {
 			legacyExtractor = 0;
+			continue;
+		}
+		else if (strcmp(argv[i], "-collision") == 0 || strcmp(argv[i], "-c") == 0) {
+			extractCollision = 1;
+			continue;
+		}
+		else if (strcmp(argv[i], "-nocollision") == 0 || strcmp(argv[i], "-nc") == 0) {
+			extractCollision = 0;
 			continue;
 		}
 		else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
@@ -153,12 +167,9 @@ int main(int argc, char* argv[]) {
 			extractConfigOld(filename, game);
 		}
 		else {
-			extractConfig(filename, game);
+			extractConfig(filename, game, extractCollision);
 		}
 	}
-
-
-
 	return 0;
 }
 
